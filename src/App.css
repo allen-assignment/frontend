@@ -1,0 +1,10 @@
+.auth-bg {
+    min-height: 100vh;
+    background-image: url('/public/graph/img.png');
+    background-size: cover;
+    background-position: center;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

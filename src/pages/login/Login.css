@@ -1,0 +1,44 @@
+.auth-card {
+    width: 75vw;
+    max-height: 75vh;
+    max-width: 360px;
+    padding: 2rem;
+    background-color: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+}
+.auth-card .card-body {
+    background-color: transparent !important;
+}
+.auth-card .form-control {
+    font-size: 1rem;
+}
+
+.auth-card button {
+    font-size: 1rem;
+}
+
+.toggle-text {
+    font-size: 0.9rem;
+}
+
+.toggle-text span {
+    color: #007bff;
+    cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 1.5rem;
+    }
+
+    .toggle-text {
+        font-size: 0.85rem;
+    }
+
+    .auth-card .form-control,
+    .auth-card button {
+        font-size: 0.95rem;
+    }
+}
