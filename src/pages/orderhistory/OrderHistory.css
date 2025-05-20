@@ -1,0 +1,89 @@
+.order-history {
+    width: 100%;
+    max-width: 600px;
+}
+.history-card{
+    background-color: rgba(240, 240, 244, 0.9) !important;
+    backdrop-filter: blur(10px) !important;
+    border: none !important;
+}
+.order-history .card {
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.order-history ul {
+    list-style-type: disc;
+    color: #555;
+    padding-left: 1rem;
+}
+
+.order-history .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.order-history .order-meta {
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.order-history .order-total {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.order-history .order-items li {
+    margin-bottom: 0.5rem;
+}
+
+.order-history .item-detail {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.order-title-container {
+    width: 90%!important;
+    max-width: 600px;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+
+}
+
+.order-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: #333;
+    margin-left: 0;
+    padding-left: 0;
+}
+
+@media (max-width: 480px) {
+    .order-history {
+        width: 100%;
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+    .order-history .card {
+        padding: 1rem 0.75rem;
+    }
+
+    .order-title-container {
+        width: 100%;
+    }
+
+    .order-title {
+        font-size: 1.1rem;
+    }
+
+    .order-history .item-detail {
+        font-size: 0.8rem;
+    }
+
+    .order-history ul {
+        padding-left: 0.75rem;
+    }
+}

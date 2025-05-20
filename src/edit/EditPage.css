@@ -1,0 +1,31 @@
+.edit-page-container {
+    min-height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: white;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: -10px;
+    z-index: 10;
+}
+
+.edit-back {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.edit-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.edit-save-btn {
+    font-size: 1rem;
+    color: #007bff;
+}

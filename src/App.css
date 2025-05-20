@@ -3,8 +3,9 @@
     background-image: url('/public/graph/img.png');
     background-size: cover;
     background-position: center;
-    padding: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    background-attachment: fixed;
+
 }
