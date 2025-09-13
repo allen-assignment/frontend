@@ -7,6 +7,10 @@ import CustomerMenuList from './components/CustomerMenuList';
 import CustomerCart from './components/CustomerCart';
 import CustomerWelcomeModal from './components/CustomerWelcomeModal';
 import CustomerPopularItems from './components/CustomerPopularItems';
+import Profile from '../pages/profile/Profile';
+import PersonalInfo from '../pages/userInfo/PersonalInfo';
+import OrderHistory from '../pages/orderhistory/OrderHistory';
+import EditField from '../edit/EditField';
 import { categories } from '../data/menuData';
 
 const CustomerAppContent: React.FC = () => {
@@ -59,6 +63,9 @@ const CustomerAppContent: React.FC = () => {
             {/* Main Content */}
             <Routes>
                 <Route path="/cart" element={<CustomerCart />} />
+                <Route path="/profile" element={<Profile userId={state.currentUser?.id} />} />
+                <Route path="/personal-info" element={<PersonalInfo />} />
+                <Route path="/edit/:field" element={<EditField />} />
                 
                 <Route path="/" element={
                     <main className={showMenu ? "pt-16" : ""}>
