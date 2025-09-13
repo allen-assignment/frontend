@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, TrendingUp, Users, ShoppingBag } from 'lucide-react';
+import { Users, Store } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
 
 const MerchantDashboard: React.FC = () => {
@@ -14,24 +14,6 @@ const MerchantDashboard: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            {/* Customer Mode Button */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Customer Mode</h3>
-                    <button
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:text-green-800 transition-colors border border-green-200 rounded-md hover:bg-green-50"
-                        onClick={() => navigate('/customer')}
-                        title="Switch to Customer Mode"
-                    >
-                        <Store size={16} />
-                        Customer View
-                    </button>
-                </div>
-                <p className="text-gray-500 text-sm">
-                    Switch to customer mode to view the restaurant menu and place orders.
-                </p>
-            </div>
-
             {/* Statistics Cards */}
             <div className="grid grid-cols-2 gap-4">
 

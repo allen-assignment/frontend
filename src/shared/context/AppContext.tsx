@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import { menuData } from '../../data/menuData';
 
 // 共享的数据类型定义
 export interface MenuItem {
@@ -10,6 +11,7 @@ export interface MenuItem {
   category_id: string;
   isAvailable?: boolean;
   ingredients?: string[];
+  inventory?: number;
 }
 
 export interface Member {
@@ -20,6 +22,13 @@ export interface Member {
   joinDate: string;
   totalOrders: number;
   totalSpent: number;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  usertype: number; // 1: customer, 2: merchant
 }
 
 export interface Order {
@@ -41,6 +50,8 @@ interface AppState {
   orders: Order[];
   currentTable: string | null;
   isConnected: boolean;
+  currentUser: User | null;
+  isLoggedIn: boolean;
 }
 
 // 动作类型
@@ -54,42 +65,13 @@ type AppAction =
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'UPDATE_ORDER_STATUS'; payload: { orderId: string; status: Order['status'] } }
   | { type: 'SET_CURRENT_TABLE'; payload: string }
-  | { type: 'SET_CONNECTION_STATUS'; payload: boolean };
+  | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
+  | { type: 'LOGIN'; payload: User }
+  | { type: 'LOGOUT' };
 
 // 初始状态
 const initialState: AppState = {
-  menuItems: [
-    {
-      id: '1',
-      name: 'Margherita Pizza',
-      description: 'Tomato sauce, mozzarella cheese, basil',
-      price: 68,
-      category_id: 'pizza',
-      isAvailable: true,
-      ingredients: ['Tomato sauce', 'Mozzarella cheese', 'Basil'],
-      image_url: '/dishpictures/margherita.jpg'
-    },
-    {
-      id: '2',
-      name: 'Hawaiian Pizza',
-      description: 'Tomato sauce, mozzarella cheese, ham, pineapple',
-      price: 72,
-      category_id: 'pizza',
-      isAvailable: true,
-      ingredients: ['Tomato sauce', 'Mozzarella cheese', 'Ham', 'Pineapple'],
-      image_url: '/dishpictures/hawaiian.jpg'
-    },
-    {
-      id: '3',
-      name: 'BBQ Chicken Pizza',
-      description: 'BBQ sauce, chicken, red onions, cilantro',
-      price: 75,
-      category_id: 'pizza',
-      isAvailable: true,
-      ingredients: ['BBQ sauce', 'Chicken', 'Red onions', 'Cilantro'],
-      image_url: '/dishpictures/bbq_ckn.jpg'
-    }
-  ],
+  menuItems: menuData,
   members: [
     {
       id: '1',
@@ -112,7 +94,9 @@ const initialState: AppState = {
   ],
   orders: [],
   currentTable: null,
-  isConnected: true
+  isConnected: true,
+  currentUser: null,
+  isLoggedIn: false
 };
 
 // Reducer函数
@@ -158,6 +142,19 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, currentTable: action.payload };
     case 'SET_CONNECTION_STATUS':
       return { ...state, isConnected: action.payload };
+    case 'LOGIN':
+      console.log('LOGIN reducer called with payload:', action.payload);
+      return { 
+        ...state, 
+        currentUser: action.payload, 
+        isLoggedIn: true 
+      };
+    case 'LOGOUT':
+      return { 
+        ...state, 
+        currentUser: null, 
+        isLoggedIn: false 
+      };
     default:
       return state;
   }
@@ -174,6 +171,8 @@ interface AppContextType {
   addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   setCurrentTable: (tableNumber: string) => void;
+  login: (user: User) => void;
+  logout: () => void;
 }
 
 // 创建上下文
@@ -220,6 +219,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     dispatch({ type: 'SET_CURRENT_TABLE', payload: tableNumber });
   };
 
+  const login = (user: User) => {
+    console.log('Login function called with user:', user);
+    dispatch({ type: 'LOGIN', payload: user });
+  };
+
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+  };
+
   const value: AppContextType = {
     state,
     dispatch,
@@ -228,7 +236,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     deleteMenuItem,
     addOrder,
     updateOrderStatus,
-    setCurrentTable
+    setCurrentTable,
+    login,
+    logout
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

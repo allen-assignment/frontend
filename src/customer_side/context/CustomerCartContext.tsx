@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { useApp, MenuItem } from '../../shared/context/AppContext';
+import { MenuItem } from '../../shared/context/AppContext';
 
 // Define the cart item structure (extends MenuItem with quantity)
 export interface CartItem extends MenuItem {
@@ -20,7 +20,7 @@ interface CartContextType {
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     clearCart: () => void;
-    placeOrder: () => void;
+    placeOrder: (addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void, currentTable: string | null) => void;
 }
 
 // Define the actions for the reducer
@@ -146,7 +146,6 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 // Create the CartProvider component
 export const CustomerCartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(cartReducer, initialState);
-    const { addOrder, state: appState } = useApp();
 
     // Define the context methods
     const addToCart = (item: MenuItem, quantity = 1) => {
@@ -168,8 +167,8 @@ export const CustomerCartProvider: React.FC<{ children: ReactNode }> = ({ childr
         dispatch({ type: 'CLEAR_CART' });
     };
 
-    const placeOrder = () => {
-        if (state.items.length > 0 && appState.currentTable) {
+    const placeOrder = (addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void, currentTable: string | null) => {
+        if (state.items.length > 0 && currentTable) {
             // 将购物车转换为订单格式
             const orderItems = state.items.map(item => ({
                 menuItem: item,
@@ -177,13 +176,13 @@ export const CustomerCartProvider: React.FC<{ children: ReactNode }> = ({ childr
             }));
             
             // 添加订单到全局状态
-            addOrder(appState.currentTable, orderItems);
+            addOrder(currentTable, orderItems);
             
             // 清空购物车
             clearCart();
             
             // 可以在这里添加成功提示
-            alert(`Order placed successfully for Table ${appState.currentTable}!`);
+            alert(`Order placed successfully for Table ${currentTable}!`);
         }
     };
 

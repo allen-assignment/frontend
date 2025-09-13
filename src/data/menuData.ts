@@ -1,4 +1,4 @@
-import { MenuItem } from '../context/CartContext';
+import { MenuItem } from '../shared/context/AppContext';
 
 // export const menuData: MenuItem[] = [
 //   // Appetizers
@@ -198,7 +198,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/bbq_ckn.jpg?raw=true",
     name: "The Barbecue Chicken Pizza",
     price: 23.99,
-    description: "Barbecued Chicken, Red Peppers, Green Peppers, Tomatoes, Red Onions, Barbecue Sauce"
+    description: "Barbecued Chicken, Red Peppers, Green Peppers, Tomatoes, Red Onions, Barbecue Sauce",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '2',
@@ -206,7 +208,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/cali_ckn.jpg?raw=true",
     name: "The California Chicken Pizza",
     price: 23.99,
-    description: "Chicken, Artichoke, Spinach, Garlic, Jalapeno Peppers, Fontina Cheese, Gouda Cheese"
+    description: "Chicken, Artichoke, Spinach, Garlic, Jalapeno Peppers, Fontina Cheese, Gouda Cheese",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '3',
@@ -214,7 +218,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/big_meat.jpg?raw=true",
     name: "The Big Meat Pizza",
     price: 28.50,
-    description: "Bacon, Pepperoni, Italian Sausage, Chorizo Sausage"
+    description: "Bacon, Pepperoni, Italian Sausage, Chorizo Sausage",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '4',
@@ -222,7 +228,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/calabrese.jpg?raw=true",
     name: "The Calabrese Pizza",
     price: 21.50,
-    description: "Salami, Pancetta, Tomatoes, Red Onions, Friggitello Peppers, Garlic"
+    description: "Salami, Pancetta, Tomatoes, Red Onions, Friggitello Peppers, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '5',
@@ -230,7 +238,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/cali_ckn.jpg?raw=true",
     name: "The California Chicken Pizza",
     price: 22.50,
-    description: "Chicken, Artichoke, Spinach, Garlic, Jalapeno Peppers, Fontina Cheese, Gouda Cheese"
+    description: "Chicken, Artichoke, Spinach, Garlic, Jalapeno Peppers, Fontina Cheese, Gouda Cheese",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '6',
@@ -238,7 +248,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/ckn_alfredo.jpg?raw=true",
     name: "The Chicken Alfredo Pizza",
     price: 21.50,
-    description: "Chicken, Red Onions, Red Peppers, Mushrooms, Asiago Cheese, Alfredo Sauce"
+    description: "Chicken, Red Onions, Red Peppers, Mushrooms, Asiago Cheese, Alfredo Sauce",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '7',
@@ -246,15 +258,19 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/ckn_pesto.jpeg?raw=true",
     name: "The Chicken Pesto Pizza",
     price: 23.50,
-    description: "Chicken, Tomatoes, Red Peppers, Spinach, Garlic, Pesto Sauce"
+    description: "Chicken, Tomatoes, Red Peppers, Spinach, Garlic, Pesto Sauce",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '8',
     category_id: '2',
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/classicpizza.jpg?raw=true",
-    name: "TThe Classic Deluxe Pizza",
+    name: "The Classic Deluxe Pizza",
     price: 20.90,
-    description: "Pepperoni, Mushrooms, Red Onions, Red Peppers, Bacon"
+    description: "Pepperoni, Mushrooms, Red Onions, Red Peppers, Bacon",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '9',
@@ -262,7 +278,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/green_garden.jpg?raw=true",
     name: "The Green Garden Pizza",
     price: 20.90,
-    description: "Spinach, Mushrooms, Tomatoes, Green Olives, Feta Cheese"
+    description: "Spinach, Mushrooms, Tomatoes, Green Olives, Feta Cheese",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '10',
@@ -270,7 +288,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/hawaiian.jpg?raw=true",
     name: "The Hawaiian Pizza",
     price: 24.90,
-    description: "Sliced Ham, Pineapple, Mozzarella Cheese"
+    description: "Sliced Ham, Pineapple, Mozzarella Cheese",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '11',
@@ -278,7 +298,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/ital_supr.jpg?raw=true",
     name: "The Italian Supreme Pizza",
     price: 20.60,
-    description: "Calabrese Salami, Capocollo, Tomatoes, Red Onions, Green Olives, Garlic"
+    description: "Calabrese Salami, Capocollo, Tomatoes, Red Onions, Green Olives, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '12',
@@ -286,7 +308,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/ital_veggie.jpg?raw=true",
     name: "The Italian Vegetables Pizza",
     price: 20.60,
-    description: "Eggplant, Artichokes, Tomatoes, Zucchini, Red Peppers, Garlic, Pesto Sauce"
+    description: "Eggplant, Artichokes, Tomatoes, Zucchini, Red Peppers, Garlic, Pesto Sauce",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '13',
@@ -294,7 +318,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/napolitana.jpg?raw=true",
     name: "The Napolitana Pizza",
     price: 22.60,
-    description: "Tomatoes, Anchovies, Green Olives, Red Onions, Garlic"
+    description: "Tomatoes, Anchovies, Green Olives, Red Onions, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '14',
@@ -302,7 +328,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/pep_msh_susage.jpeg?raw=true",
     name: "The Pepperoni Pizza",
     price: 19.60,
-    description: "Pepperoni, Mushrooms, Green Peppers, Sausage"
+    description: "Pepperoni, Mushrooms, Green Peppers, Sausage",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '15',
@@ -310,7 +338,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/peppr_salami.jpeg?raw=true",
     name: "The Pepper Salami Pizza",
     price: 23.60,
-    description: "Genoa Salami, Capocollo, Pepperoni, Tomatoes, Asiago Cheese, Garlic"
+    description: "Genoa Salami, Capocollo, Pepperoni, Tomatoes, Asiago Cheese, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '16',
@@ -318,7 +348,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/sicilian.jpg?raw=true",
     name: "The Sicilian Pizza",
     price: 22.60,
-    description: "Coarse Sicilian Salami, Tomatoes, Green Olives, Luganega Sausage, Onions, Garlic"
+    description: "Coarse Sicilian Salami, Tomatoes, Green Olives, Luganega Sausage, Onions, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '17',
@@ -326,7 +358,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/soppressata.jpg?raw=true",
     name: "The Soppressata Pizza",
     price: 23.60,
-    description: "Soppressata Salami, Fontina Cheese, Mozzarella Cheese, Mushrooms, Garlic"
+    description: "Soppressata Salami, Fontina Cheese, Mozzarella Cheese, Mushrooms, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '18',
@@ -334,7 +368,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/spin_pesto.jpeg?raw=true",
     name: "Spinach Pesto Pizza",
     price: 24.60,
-    description: "Spinach, Artichokes, Tomatoes, Sun-dried Tomatoes, Garlic, Pesto Sauce"
+    description: "Spinach, Artichokes, Tomatoes, Sun-dried Tomatoes, Garlic, Pesto Sauce",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '19',
@@ -342,7 +378,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/spin_pesto_spicy.jpg?raw=true",
     name: "Spinach and Feta Pizza",
     price: 21.60,
-    description: "Spinach, Mushrooms, Red Onions, Feta Cheese, Garlic, Spicy"
+    description: "Spinach, Mushrooms, Red Onions, Feta Cheese, Garlic, Spicy",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '20',
@@ -350,7 +388,9 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/spinach_fet.jpg?raw=true",
     name: "The Four Cheese Pizza",
     price: 20.90,
-    description: "Ricotta Cheese, Piccante Cheese, Mozzarella Cheese, Parmigiano Cheese, Garlic"
+    description: "Ricotta Cheese, Piccante Cheese, Mozzarella Cheese, Parmigiano Cheese, Garlic",
+    isAvailable: true,
+    inventory: 10
 },
 {
     id: '21',
@@ -358,14 +398,16 @@ export const menuData: MenuItem[] = [
     image_url: "https://github.com/allen-assignment/backend/blob/main/dishpictures/veggie_veg.jpg?raw=true",
     name: "Double Vegetables Pizza",
     price: 18.90,
-    description: "Mushrooms, Tomatoes, Red Peppers, Green Peppers, Red Onions, Zucchini, Spinach, Garlic"
+    description: "Mushrooms, Tomatoes, Red Peppers, Green Peppers, Red Onions, Zucchini, Spinach, Garlic",
+    isAvailable: true,
+    inventory: 10
 }
 ]
 
 export const categories = [
-    { category_id: 'all', name: 'All' },
-    { category_id: '1', name: 'Chicken' },
-    { category_id: '2', name: 'Classic' },
-    { category_id: '3', name: 'Supreme' },
-    { category_id: '4', name: 'Veggie' },
+    { category_id: 'all', category_name: 'All' },
+    { category_id: '1', category_name: 'Chicken' },
+    { category_id: '2', category_name: 'Classic' },
+    { category_id: '3', category_name: 'Supreme' },
+    { category_id: '4', category_name: 'Veggie' },
 ];

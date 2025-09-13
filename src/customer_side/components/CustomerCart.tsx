@@ -3,10 +3,11 @@ import { Minus, Plus, Check, Trash2 } from 'lucide-react';
 import { useCart, CartItem } from '../context/CustomerCartContext';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../shared/context/AppContext';
+import { orderAPI } from '../../services/api';
 
 const CustomerCart: React.FC = () => {
     const { state, updateQuantity, removeFromCart, clearCart, placeOrder } = useCart();
-    const { state: appState } = useApp();
+    const { state: appState, addOrder } = useApp();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
     const navigate = useNavigate();
@@ -15,12 +16,39 @@ const CustomerCart: React.FC = () => {
     const handlePlaceOrder = async () => {
         if (state.items.length === 0) return;
 
+        // 检查是否已登录
+        if (!appState.isLoggedIn || !appState.currentUser) {
+            // 直接显示弹框提示并跳转到登录页面
+            const shouldLogin = window.confirm('Please sign in to place an order. Click OK to go to the sign in page.');
+            if (shouldLogin) {
+                navigate(`/login?redirect=${encodeURIComponent('/customer/cart')}`);
+            }
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            // 使用共享上下文的placeOrder方法
-            placeOrder();
+            // 准备订单数据
+            const orderData = {
+                user_id: parseInt(appState.currentUser.id),
+                table_number: appState.currentTable || '1',
+                items: state.items.map(item => ({
+                    item_id: parseInt(item.id),
+                    quantity: item.quantity
+                }))
+            };
+
+            // 调用API创建订单
+            const response = await orderAPI.createOrder(orderData);
+            
+            // 清空购物车
+            clearCart();
+            
+            // 显示成功消息
             setOrderPlaced(true);
+            
+            console.log('订单创建成功:', response);
         } catch (error) {
             console.error('下单失败:', error);
             alert('下单失败，请重试');
@@ -35,6 +63,7 @@ const CustomerCart: React.FC = () => {
         navigate('/customer');
     };
 
+
     // Order success view
     if (orderPlaced) {
         return (
@@ -46,9 +75,15 @@ const CustomerCart: React.FC = () => {
                     
                     <h2 className="text-2xl font-bold mb-4">Order Confirmed!</h2>
                     
-                    <p className="text-gray-600 text-lg mb-6">
+                    <p className="text-gray-600 text-lg mb-4">
                         Your order has been received and is being prepared for Table {appState.currentTable}.
                     </p>
+                    
+                    {appState.isLoggedIn && appState.currentUser && (
+                        <p className="text-gray-600 text-sm mb-6">
+                            Order placed by: <span className="font-medium text-blue-600">{appState.currentUser.username}</span>
+                        </p>
+                    )}
                     
                     <p className="text-xl font-semibold mb-8 text-blue-600">
                         Estimated waiting time: 15-20 min
@@ -118,6 +153,17 @@ const CustomerCart: React.FC = () => {
                                 <h2 className="text-xl font-semibold">Order Summary</h2>
                             </div>
                             <div className="p-4">
+                                {/* User info */}
+                                {appState.isLoggedIn && appState.currentUser && (
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-green-800">
+                                                Ordering as: <span className="font-medium">{appState.currentUser.username}</span>
+                                            </span>
+                                            <span className="w-2 h-2 rounded-full bg-green-500" title="Logged in" />
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
@@ -169,7 +215,7 @@ const CartItemRow: React.FC<{
                     <p className="text-sm text-gray-500 line-clamp-1">{item.description}</p>
                     <p className="text-sm text-blue-600">¥{item.price}</p>
                 </div>
-                <span className="font-medium ml-4">¥{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="font-medium ml-4">¥{(Number(item.price) * item.quantity).toFixed(2)}</span>
             </div>
             
             <div className="flex justify-between items-center">

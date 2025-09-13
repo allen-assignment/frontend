@@ -43,6 +43,19 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
                                     • Table {appState.currentTable}
                                 </span>
                             )}
+                            {/* 开发环境重置按钮 */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <button
+                                    className="text-xs text-gray-400 hover:text-gray-600 ml-2"
+                                    onClick={() => {
+                                        localStorage.removeItem('hasSeenWelcome');
+                                        window.location.reload();
+                                    }}
+                                    title="Reset Welcome Modal (Dev only)"
+                                >
+                                    🔄
+                                </button>
+                            )}
                         </>
                     )}
                 </div>
@@ -63,16 +76,31 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
                     </button>
 
                     {showLoginButtons && (
-                        isLoggedIn ? (
-                        <button 
-                            className="text-gray-600 hover:text-gray-800 transition-colors"
-                            onClick={() => navigate('/customer/profile')}
-                            aria-label="Profile"
-                        >
-                            <UserCircle size={20} />
-                        </button>
+                        location.pathname === '/login' ? (
+                            <button className="text-sm text-gray-600 hover:text-gray-800" onClick={() => {
+                                const redirectTo = new URLSearchParams(location.search).get('redirect');
+                                navigate(redirectTo || '/customer');
+                            }}>
+                                ← Back to Menu
+                            </button>
+                        ) : isLoggedIn ? (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">
+                                Welcome, {appState.currentUser?.username}
+                            </span>
+                            <button 
+                                className="text-gray-600 hover:text-gray-800 transition-colors"
+                                onClick={() => navigate('/customer/profile')}
+                                aria-label="Profile"
+                            >
+                                <UserCircle size={20} />
+                            </button>
+                        </div>
                         ) : (
-                            <button className="text-sm text-gray-600" onClick={() => navigate('/customer/login')}>
+                            <button 
+                                className="text-sm text-gray-600" 
+                                onClick={() => navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`)}
+                            >
                                 Sign in
                             </button>
                         )

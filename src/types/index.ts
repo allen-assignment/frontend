@@ -10,7 +10,7 @@ export interface MenuItem {
 
 export interface Category {
   category_id: string;
-  name: string;
+  category_name: string;
 }
 
 // Merchant side types

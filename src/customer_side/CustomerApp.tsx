@@ -7,24 +7,15 @@ import CustomerMenuList from './components/CustomerMenuList';
 import CustomerCart from './components/CustomerCart';
 import CustomerWelcomeModal from './components/CustomerWelcomeModal';
 import CustomerPopularItems from './components/CustomerPopularItems';
-
-// 分类定义
-const categories = [
-    { category_id: 'all', name: 'All' },
-    { category_id: 'pizza', name: 'Pizza' },
-    { category_id: 'pasta', name: 'Pasta' },
-    { category_id: 'salad', name: 'Salad' },
-    { category_id: 'appetizer', name: 'Appetizer' },
-    { category_id: 'dessert', name: 'Dessert' },
-    { category_id: 'beverage', name: 'Beverage' }
-];
+import { categories } from '../data/menuData';
 
 const CustomerAppContent: React.FC = () => {
     const { setCurrentTable, state } = useApp();
-    const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [isLogin, setIsLogin] = useState(false);
+    // 使用AppContext中的登录状态
+    const isLogin = state.isLoggedIn;
 
     // Generate random table number for demo
     useEffect(() => {
@@ -34,13 +25,26 @@ const CustomerAppContent: React.FC = () => {
         }
     }, [setCurrentTable, state.currentTable]);
 
+    // 检查是否首次访问
+    useEffect(() => {
+        const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+        if (!hasSeenWelcome) {
+            setShowWelcomeModal(true);
+        } else {
+            setShowMenu(true);
+        }
+    }, []);
+
     const handleWelcomeClose = () => {
         setShowWelcomeModal(false);
         setShowMenu(true);
+        // 记住用户已经看过欢迎页面
+        localStorage.setItem('hasSeenWelcome', 'true');
     };
 
     return (
         <div className="min-h-screen bg-white">
+            
             {/* Welcome Modal */}
             <CustomerWelcomeModal 
                 isOpen={showWelcomeModal} 
@@ -77,7 +81,7 @@ const CustomerAppContent: React.FC = () => {
                                                             : 'bg-white text-gray-700 hover:bg-gray-50 border border-transparent'
                                                     }`}
                                                 >
-                                                    {category.name}
+                                                    {category.category_name}
                                                 </button>
                                             ))}
                                         </div>
@@ -103,4 +107,4 @@ const CustomerApp: React.FC = () => {
     );
 };
 
-export default CustomerApp; 
+export default CustomerApp;

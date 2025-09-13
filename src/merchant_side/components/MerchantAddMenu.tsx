@@ -13,7 +13,8 @@ const MerchantAddMenu: React.FC = () => {
         price: '',
         category_id: 'pizza',
         image_url: '',
-        ingredients: ''
+        ingredients: '',
+        inventory: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -30,7 +31,7 @@ const MerchantAddMenu: React.FC = () => {
 
         try {
             // Validate form
-            if (!formData.name.trim() || !formData.description.trim() || !formData.price) {
+            if (!formData.name.trim() || !formData.description.trim() || !formData.price || !formData.inventory) {
                 alert('Please fill in all required fields');
                 return;
             }
@@ -45,6 +46,7 @@ const MerchantAddMenu: React.FC = () => {
                 ingredients: formData.ingredients.trim() 
                     ? formData.ingredients.split(',').map(ing => ing.trim()).filter(Boolean)
                     : [],
+                inventory: parseInt(formData.inventory),
                 isAvailable: true
             };
 
@@ -142,6 +144,25 @@ const MerchantAddMenu: React.FC = () => {
                                     placeholder="0.00"
                                     required
                                 />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800 mb-2">
+                                    Inventory (Stock) *
+                                </label>
+                                <input 
+                                    type="number"
+                                    name="inventory"
+                                    value={formData.inventory}
+                                    onChange={handleChange}
+                                    min="0"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                    placeholder="Enter available quantity"
+                                    required
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Enter the number of items available in stock
+                                </p>
                             </div>
                             
                             <div>

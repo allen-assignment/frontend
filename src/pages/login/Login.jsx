@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import {Form, Button, Card, Alert} from 'react-bootstrap';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Login.css';
-import axios from 'axios';
+import { userAPI } from '../../services/api';
+import { useApp } from '../../shared/context/AppContext';
 
-function Login({ isLogin, onToggle }) {
+function Login({ isLogin = true, onToggle }) {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useApp();
+    const [currentMode, setCurrentMode] = useState(isLogin);
+    
+    // 获取重定向URL，默认为客户页面
+    const redirectTo = new URLSearchParams(location.search).get('redirect') || '/customer';
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
@@ -13,27 +22,106 @@ function Login({ isLogin, onToggle }) {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
+    const handleToggle = () => {
+        setCurrentMode(!currentMode);
+        setMessage('');
+        setError('');
+        if (onToggle) onToggle();
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
         setError('');
 
         try {
-            if (isLogin) {
-                const res = await axios.post('http://localhost:8000/user/login', {
+            if (currentMode) {
+                const res = await userAPI.login({
                     username,
                     password
                 });
-                setMessage(res.data.message);
+                setMessage(res.message);
+                
+                // 登录成功后获取完整用户信息
+                try {
+                    const userInfo = await userAPI.getUserById(res.user_id);
+                    
+                    // 创建用户对象并设置登录状态
+                    const user = {
+                        id: userInfo.user_id?.toString() || res.user_id?.toString() || Date.now().toString(),
+                        username: userInfo.username || res.username,
+                        email: userInfo.email || '',
+                        usertype: userInfo.usertype || 1
+                    };
+                    
+                    // 设置登录状态
+                    login(user);
+                    
+                    // 登录成功后跳转到重定向页面
+                    if (user.usertype === 2) {
+                        // 商家用户总是跳转到商家页面
+                        navigate('/merchant');
+                    } else {
+                        // 普通用户跳转到重定向页面
+                        navigate(redirectTo);
+                    }
+                } catch (userInfoError) {
+                    console.error('Failed to get user info:', userInfoError);
+                    // 如果获取用户信息失败，使用基本信息
+                    const user = {
+                        id: res.user_id?.toString() || Date.now().toString(),
+                        username: res.username,
+                        email: '',
+                        usertype: 1
+                    };
+                    login(user);
+                    navigate(redirectTo);
+                }
             } else {
-                const res = await axios.post('http://localhost:8000/user/register', {
+                const res = await userAPI.register({
                     username,
                     password,
                     email,
                     birth_date: birthDate,
                     usertype: parseInt(usertype)
                 });
-                setMessage(res.data.message);
+                setMessage(res.message);
+                
+                // 注册成功后自动登录
+                try {
+                    const userInfo = await userAPI.getUserById(res.user_id);
+                    
+                    // 创建用户对象并设置登录状态
+                    const user = {
+                        id: userInfo.user_id?.toString() || res.user_id?.toString() || Date.now().toString(),
+                        username: userInfo.username || res.username,
+                        email: userInfo.email || email,
+                        usertype: userInfo.usertype || parseInt(usertype)
+                    };
+                    
+                    // 设置登录状态
+                    login(user);
+                    
+                    // 注册成功后跳转到重定向页面
+                    if (user.usertype === 2) {
+                        // 商家用户总是跳转到商家页面
+                        navigate('/merchant');
+                    } else {
+                        // 普通用户跳转到重定向页面
+                        navigate(redirectTo);
+                    }
+                } catch (userInfoError) {
+                    console.error('Failed to get user info after registration:', userInfoError);
+                    // 如果获取用户信息失败，使用基本信息
+                    const user = {
+                        id: res.user_id?.toString() || Date.now().toString(),
+                        username: res.username,
+                        email: email,
+                        usertype: parseInt(usertype)
+                    };
+                    login(user);
+                    navigate(redirectTo);
+                }
             }
         } catch (err) {
             const errMsg = err.response?.data?.error || 'Request failed';
@@ -45,7 +133,7 @@ function Login({ isLogin, onToggle }) {
         <Card className="auth-card">
             <Card.Body>
                 <Card.Title className="text-center mb-4">
-                    {isLogin ? 'Login' : 'Register'}
+                    {currentMode ? 'Login' : 'Register'}
                 </Card.Title>
 
                 {message && <Alert variant="success">{message}</Alert>}
@@ -72,7 +160,7 @@ function Login({ isLogin, onToggle }) {
                         />
                     </Form.Group>
 
-                    {!isLogin && (
+                    {!currentMode && (
                         <>
                             <Form.Group className="mb-3">
                                 <Form.Control
@@ -87,6 +175,7 @@ function Login({ isLogin, onToggle }) {
                             <Form.Group className="mb-3">
                                 <Form.Control
                                     type="date"
+                                    placeholder="Birth Date"
                                     value={birthDate}
                                     onChange={(e) => setBirthDate(e.target.value)}
                                     required
@@ -107,15 +196,15 @@ function Login({ isLogin, onToggle }) {
                     )}
 
                     <Button variant="primary" type="submit" className="w-100">
-                        {isLogin ? 'Login' : 'Register'}
+                        {currentMode ? 'Login' : 'Register'}
                     </Button>
                 </Form>
 
                 <div className="text-center mt-3 toggle-text">
-                    {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
-                    <span onClick={onToggle}>
-            {isLogin ? 'Register here' : 'Login here'}
-          </span>
+                    {currentMode ? "Don't have an account?" : 'Already have an account?'}{' '}
+                    <span onClick={handleToggle} style={{color: 'blue', cursor: 'pointer'}}>
+                        {currentMode ? 'Register here' : 'Login here'}
+                    </span>
                 </div>
             </Card.Body>
         </Card>

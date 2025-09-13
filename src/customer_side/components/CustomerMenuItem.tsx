@@ -3,14 +3,12 @@ import { MenuItem as MenuItemType } from '../../shared/context/AppContext';
 import { useCart } from '../context/CustomerCartContext';
 import { Plus, Minus } from 'lucide-react';
 
-// 简化的分类映射
+// 分类映射 - 对应后台返回的数字ID
 const categoryNames: { [key: string]: string } = {
-    'pizza': 'Pizza',
-    'pasta': 'Pasta',
-    'salad': 'Salad',
-    'appetizer': 'Appetizer',
-    'dessert': 'Dessert',
-    'beverage': 'Beverage'
+    '1': 'Chicken',
+    '2': 'Classic',
+    '3': 'Supreme',
+    '4': 'Veggie'
 };
 
 interface CustomerMenuItemProps {
@@ -35,6 +33,13 @@ const CustomerMenuItem: React.FC<CustomerMenuItemProps> = ({ item }) => {
     }, [state.items, item.id]);
 
     const handleIncrement = () => {
+        const inventory = item.inventory || 10; // 默认库存为10
+        
+        // 检查是否达到库存限制
+        if (quantity >= inventory) {
+            return; // 不执行任何操作
+        }
+        
         const newQuantity = quantity + 1;
         setQuantity(newQuantity);
         
@@ -128,7 +133,12 @@ const CustomerMenuItem: React.FC<CustomerMenuItemProps> = ({ item }) => {
                                     <span className="w-6 text-center font-medium">{quantity}</span>
                                     <button
                                         onClick={handleIncrement}
-                                        className="p-1 text-gray-600 hover:text-red-600 transition-colors"
+                                        disabled={quantity >= (item.inventory || 10)}
+                                        className={`p-1 transition-colors ${
+                                            quantity >= (item.inventory || 10)
+                                                ? 'text-gray-300 cursor-not-allowed' 
+                                                : 'text-gray-600 hover:text-red-600'
+                                        }`}
                                     >
                                         <Plus size={16} />
                                     </button>
