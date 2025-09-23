@@ -9,8 +9,8 @@ function App() {
 
     return (
         <Container fluid className="auth-bg d-flex justify-content-center align-items-center">
-            {/*<Login isLogin={isLogin} onToggle={() => setIsLogin(!isLogin)}/>*/}
-            <Profile userId={3}></Profile>
+            <Login isLogin={isLogin} onToggle={() => setIsLogin(!isLogin)}/>
+            {/*<Profile userId={2}></Profile>*/}
         </Container>
     );
 }
