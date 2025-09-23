@@ -5,9 +5,9 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "./EditPage.css";
 
 const labels = {
-    username: "昵称",
-    email: "邮箱",
-    birthday: "生日",
+    username: "Username",
+    email: "Email",
+    birthday: "Birthday",
 };
 
 const EditField = () => {
@@ -17,7 +17,7 @@ const EditField = () => {
     const [value, setValue] = useState(location.state?.value || "");
 
     const handleSave = () => {
-        alert(`${labels[field]} 已保存：${value}`);
+        alert(`${labels[field]} saved: ${value}`);
         navigate(-1);
     };
 
@@ -26,7 +26,7 @@ const EditField = () => {
             <div className="edit-header">
                 <span className="edit-back" onClick={() => navigate(-1)}>&lt;</span>
                 <span className="edit-title">{labels[field]}</span>
-                <Button variant="link" className="edit-save-btn" onClick={handleSave}>保存</Button>
+                <Button variant="link" className="edit-save-btn" onClick={handleSave}>Save</Button>
             </div>
 
             <Form className="mt-3 px-3">
@@ -36,9 +36,9 @@ const EditField = () => {
                         type={field === "birthday" ? "date" : "text"}
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
-                        placeholder={`请输入${labels[field]}`}
+                        placeholder={`Enter ${labels[field]}`}
                     />
-                    {field === "username" && <Form.Text muted>设置后，其他人将看到你的昵称。</Form.Text>}
+                    {field === "username" && <Form.Text muted>Once set, others will see your username.</Form.Text>}
                 </Form.Group>
             </Form>
         </Container>
