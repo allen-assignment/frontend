@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, ClipboardList, Users, Store, Camera } from 'lucide-react';
+import { BarChart3, Users, Store, Camera } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const MerchantBottomNavigation: React.FC = () => {

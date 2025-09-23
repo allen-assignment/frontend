@@ -29,15 +29,24 @@ const CustomerAppContent: React.FC = () => {
         }
     }, [setCurrentTable, state.currentTable]);
 
-    // 检查是否首次访问
+    // 检查登录状态和首次访问
     useEffect(() => {
-        const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-        if (!hasSeenWelcome) {
-            setShowWelcomeModal(true);
-        } else {
+        // 如果用户已登录，直接显示菜单，不显示 welcome modal
+        if (isLogin) {
+            setShowWelcomeModal(false);
             setShowMenu(true);
+        } else {
+            // 未登录用户检查是否首次访问
+            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+            if (!hasSeenWelcome) {
+                setShowWelcomeModal(true);
+                setShowMenu(false); // modal 显示时隐藏菜单
+            } else {
+                setShowWelcomeModal(false);
+                setShowMenu(true);
+            }
         }
-    }, []);
+    }, [isLogin]);
 
     const handleWelcomeClose = () => {
         setShowWelcomeModal(false);

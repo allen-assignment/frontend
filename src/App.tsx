@@ -12,7 +12,7 @@ function App() {
   return (
     <AppProvider>
       <Routes>
-        {/* 登录页面 */}
+        {/* Login Page */}
         <Route path="/login" element={
           <CustomerCartProvider>
             <div className="min-h-screen bg-white">
@@ -24,16 +24,16 @@ function App() {
           </CustomerCartProvider>
         } />
         
-        {/* Customer 端路由 */}
+        {/* Customer */}
         <Route path="/customer/*" element={<CustomerApp />} />
         
-        {/* Merchant 端路由 */}
+        {/* Merchant */}
         <Route path="/merchant/*" element={<MerchantApp />} />
         
-        {/* 默认路由 - 显示客户页面 */}
+        {/* Default */}
         <Route path="/" element={<CustomerApp />} />
         
-        {/* 其他未匹配的路由重定向到客户页面 */}
+        {/* Other unmatched routes redirect to customer page */}
         <Route path="*" element={<CustomerApp />} />
       </Routes>
     </AppProvider>

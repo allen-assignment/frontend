@@ -83,6 +83,23 @@ export interface Order {
   }[];
 }
 
+// OCR相关类型定义
+export interface OCRMenuItem {
+  name: string;
+  price: number;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  confidence?: number;
+}
+
+export interface OCRResponse {
+  ok: boolean;
+  mode: string;
+  items: OCRMenuItem[];
+  error?: string;
+}
+
 // 用户相关API
 export const userAPI = {
   // 用户注册
@@ -142,6 +159,26 @@ export const menuAPI = {
     const response = await api.get('/menu/items/');
     return response.data;
   },
+
+  // 获取所有分类（从菜单项中提取）
+  getAllCategories: async (): Promise<{ categories: { id: number; name: string; description: string }[] }> => {
+    const response = await api.get('/menu/items/');
+    const menuItems = response.data.menuItems;
+    
+    // 从菜单项中提取唯一的分类
+    const categoryMap = new Map();
+    menuItems.forEach((item: MenuItem) => {
+      if (item.category && !categoryMap.has(item.category.id)) {
+        categoryMap.set(item.category.id, {
+          id: item.category.id,
+          name: item.category.name,
+          description: '' // 菜单API中没有分类描述
+        });
+      }
+    });
+    
+    return { categories: Array.from(categoryMap.values()) };
+  },
 };
 
 // 订单相关API
@@ -166,6 +203,50 @@ export const orderAPI = {
   // 取消订单
   cancelOrder: async (orderId: number) => {
     const response = await api.post('/order/cancel/', { order_id: orderId });
+    return response.data;
+  },
+};
+
+// OCR相关API - 使用新的backend OCR端点
+export const ocrAPI = {
+
+  // // 处理图片OCR识别
+  // processImage: async (imageData: string) => {
+  //   const response = await api.post('/ocr/process/', {
+  //     image: imageData
+
+
+
+  // 上传菜单图片进行OCR识别
+  uploadMenuImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post('/menu/ocr/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // // 获取可用的OCR提供商
+  // getProviders: async () => {
+  //   const response = await api.get('/ocr/providers/');
+  //   return response.data;
+  // },
+
+  // 上传菜单图片并获取CSV格式结果
+  uploadMenuImageAsCSV: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post('/menu/ocr/upload/?format=csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      responseType: 'blob', // 用于下载CSV文件
+    });
     return response.data;
   },
 };
