@@ -140,7 +140,7 @@ function Login({isLogin, onToggle}) {
                             )}
                             {usertype === "1" && (
                                 <Form.Group style={{ marginTop: '4px', marginBottom: '4px' }}>
-                                    <h6 className="form-label">Preferences</h6>
+                                    <h7 className="form-label">What's your preferred flavor?</h7>
                                     <div className="preference-options">
                                         {[
                                             { value: 'seafood', label: 'seafood' },
