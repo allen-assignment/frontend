@@ -1,35 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../shared/context/AppContext';
 import { menuAPI } from '../../services/api';
 import MerchantEditModal from './MerchantEditModal';
+import MenuItemImage from '../../shared/components/MenuItemImage';
 
 const MerchantMenuManagement: React.FC = () => {
-    const { state, dispatch, updateMenuItem, deleteMenuItem } = useApp();
+    const { state, dispatch, updateMenuItem, deleteMenuItem, setCategories } = useApp();
     const navigate = useNavigate();
     const [editingItem, setEditingItem] = useState<any>(null);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [loading, setLoading] = useState(true);
+    // Initialize loading state: no loading needed if data is already loaded
+    const [loading, setLoading] = useState(!(state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0));
     const [error, setError] = useState<string | null>(null);
-
-    // 从 API 获取菜单数据
+    
+    // Monitor data state changes and update loading state
     useEffect(() => {
+        if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0) {
+            setLoading(false);
+        }
+    }, [state.isMenuDataLoaded, state.menuItems]);
+    
+    // Fetch menu data from API
+    useEffect(() => {
+        let isMounted = true; // Add flag to avoid state updates after component unmount
+        
         const fetchMenuData = async () => {
             try {
-                setLoading(true);
                 setError(null);
                 
-                // 如果全局状态中已有数据，直接使用
-                if (state.menuItems && state.menuItems.length > 0) {
+                // Check if data already exists and merchant ID matches
+                const merchantId = state.currentUser?.merchant_id;
+                if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0 && merchantId) {
+                    console.log('📋 Using cached menu data');
                     setLoading(false);
                     return;
                 }
-
-                const response = await menuAPI.getAllMenuItems();
-                console.log('从API获取的菜单数据:', response.menuItems);
                 
-                // 将API数据转换为AppContext格式
+                console.log('🔄 Fetching menu data from API...');
+                setLoading(true);
+                if (!merchantId) {
+                    throw new Error('Merchant ID not found. Please login again.');
+                }
+                
+                const response = await menuAPI.getAllMenuItems(merchantId);
+                console.log('Menu data from API:', response.menuItems);
+                
+                // Check if component is still mounted
+                if (!isMounted) return;
+                
+                // Extract unique categories from menu data
+                const categoryMap = new Map();
+                response.menuItems.forEach((item: any) => {
+                    if (item.category && !categoryMap.has(item.category.id)) {
+                        categoryMap.set(item.category.id, {
+                            id: item.category.id,
+                            name: item.category.name
+                        });
+                    }
+                });
+                const uniqueCategories = Array.from(categoryMap.values());
+                // Set category data to global state
+                setCategories(uniqueCategories);
+                
+                // Convert API data to AppContext format
                 const convertedItems = response.menuItems.map((item: any) => ({
                     id: item.id.toString(),
                     name: item.name,
@@ -37,57 +72,95 @@ const MerchantMenuManagement: React.FC = () => {
                     price: parseFloat(item.price.toString()),
                     image_url: item.image_url,
                     category_id: item.category?.id?.toString() || '1',
+                    category_name: item.category?.name || 'Unknown',
                     isAvailable: item.inventory > 0,
                     inventory: item.inventory
                 }));
                 
-                // 更新全局状态
+                // Update global state
                 dispatch({ 
                     type: 'SET_MENU_ITEMS', 
                     payload: convertedItems
                 });
-            } catch (err) {
-                console.error('获取菜单失败:', err);
-                setError('Failed to load menu items');
+            } catch (err: any) {
+                console.error('Failed to fetch menu:', err);
+                if (isMounted) {
+                    setError('Failed to load menu items');
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchMenuData();
-    }, [dispatch, state.menuItems]);
+        
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
+    }, [state.currentUser?.merchant_id, state.isMenuDataLoaded, state.menuItems.length]); // Monitor merchant ID and data state changes
 
     const handleEditClick = (item: any) => {
         setEditingItem(item);
         setShowEditModal(true);
     };
 
-    const handleToggleAvailability = (item: any) => {
-        updateMenuItem({
-            ...item,
-            isAvailable: !item.isAvailable
-        });
-    };
-
-    const handleDeleteItem = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this menu item?')) {
-            deleteMenuItem(id);
+    const handleToggleAvailability = async (item: any) => {
+        try {
+            const newAvailability = !item.isAvailable;
+            await menuAPI.updateMenuItem({
+                id: parseInt(item.id),
+                isAvailable: newAvailability ? 1 : 0
+            });
+            
+            // Update local state
+            updateMenuItem({
+                ...item,
+                isAvailable: newAvailability
+            });
+        } catch (error) {
+            console.error('Failed to update menu item availability:', error);
+            alert('Update failed, please try again');
         }
     };
 
-    // 加载状态
+    const handleDeleteItem = async (id: string) => {
+        if (window.confirm('Are you sure you want to delete this menu item?')) {
+            try {
+                console.log('🗑️ Preparing to delete menu item:', {
+                    id: id,
+                    parsedId: parseInt(id),
+                    requestData: { id: parseInt(id) }
+                });
+                
+                const response = await menuAPI.deleteMenuItem({
+                    id: parseInt(id)
+                });
+                
+                console.log('✅ Delete API response:', response);
+                
+                // Remove from local state
+                deleteMenuItem(id);
+                console.log('✅ Local state updated');
+            } catch (error: any) {
+                console.error('❌ Failed to delete menu item:', error);
+                console.error('❌ Error details:', error.response?.data);
+                alert(`Delete failed: ${error.response?.data?.error || error.message || 'Please try again'}`);
+            }
+        }
+    };
+
+
+    // Loading state
     if (loading) {
         return (
             <div className="min-h-screen w-full bg-gray-50">
                 <div className="bg-gray-800 text-white w-full">
                     <div className="py-4">
-                        <div className="flex items-center justify-between px-4">
-                            <button 
-                                className="p-2 hover:bg-gray-700 rounded-lg"
-                                onClick={() => navigate('/merchant')}
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
+                        <div className="flex items-center justify-between px-6">
+                            <div className="w-10 h-10"></div>
                             <h1 className="text-xl font-bold text-center">Menu Management</h1>
                             <div className="w-10 h-10"></div>
                         </div>
@@ -103,19 +176,14 @@ const MerchantMenuManagement: React.FC = () => {
         );
     }
 
-    // 错误状态
+    // Error state
     if (error) {
         return (
             <div className="min-h-screen w-full bg-gray-50">
                 <div className="bg-gray-800 text-white w-full">
                     <div className="py-4">
-                        <div className="flex items-center justify-between px-4">
-                            <button 
-                                className="p-2 hover:bg-gray-700 rounded-lg"
-                                onClick={() => navigate('/merchant')}
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
+                        <div className="flex items-center justify-between px-6">
+                            <div className="w-10 h-10"></div>
                             <h1 className="text-xl font-bold text-center">Menu Management</h1>
                             <div className="w-10 h-10"></div>
                         </div>
@@ -141,14 +209,9 @@ const MerchantMenuManagement: React.FC = () => {
             {/* Top Navigation Bar */}
             <div className="bg-gray-800 text-white w-full">
                 <div className="py-4">
-                    <div className="flex items-center justify-between px-4">
-                        <button 
-                            className="p-2 hover:bg-gray-700 rounded-lg"
-                            onClick={() => navigate('/merchant')}
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <h1 className="text-xl font-bold text-center">Menu Management</h1>
+                    <div className="flex items-center justify-between px-6">
+                        <div className="w-10 h-10"></div>
+                        <h1 className="text-xl font-bold text-center flex-1">Menu Management</h1>
                         <button 
                             className="w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
                             onClick={() => navigate('/merchant/menu/add')}
@@ -200,20 +263,13 @@ const MerchantMenuManagement: React.FC = () => {
                             <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex">
                                     {/* Left Section - Image */}
-                                    <div className="w-24 h-24 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center flex-shrink-0 mr-4">
-                                        {item.image_url ? (
-                                            <img
-                                                src={item.image_url}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover rounded-lg"
-                                                onError={(e) => {
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.style.display = 'none';
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 bg-gray-300 rounded"></div>
-                                        )}
+                                    <div className="w-24 h-24 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center flex-shrink-0 mr-4 overflow-hidden">
+                                        <MenuItemImage
+                                            src={item.image_url}
+                                            alt={item.name}
+                                            className="w-full h-full object-cover"
+                                            fallbackClassName="w-full h-full"
+                                        />
                                     </div>
                                     
                                     {/* Right Section - Content */}
@@ -236,7 +292,9 @@ const MerchantMenuManagement: React.FC = () => {
                                         
                                         {/* Category and Ingredients */}
                                         <div className="mb-4">
-                                            <p className="text-sm text-gray-500">Category: {item.category_id}</p>
+                                            <p className="text-sm text-gray-500">
+                                                Category: {(item as any).category_name || 'Unknown'}
+                                            </p>
                                             {/* {item.ingredients && item.ingredients.length > 0 && (
                                                 <p className="text-sm text-gray-500">
                                                     Ingredients: {item.ingredients.join(', ')}
@@ -292,6 +350,7 @@ const MerchantMenuManagement: React.FC = () => {
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
                 editingItem={editingItem}
+                categories={state.categories}
             />
         </div>
     );

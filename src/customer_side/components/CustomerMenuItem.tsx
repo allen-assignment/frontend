@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MenuItem as MenuItemType } from '../../shared/context/AppContext';
 import { useCart } from '../context/CustomerCartContext';
 import { Plus, Minus } from 'lucide-react';
-
-// 分类映射 - 对应后台返回的数字ID
-const categoryNames: { [key: string]: string } = {
-    '1': 'Chicken',
-    '2': 'Classic',
-    '3': 'Supreme',
-    '4': 'Veggie'
-};
+import MenuItemImage from '../../shared/components/MenuItemImage';
 
 interface CustomerMenuItemProps {
     item: MenuItemType;
@@ -33,11 +26,11 @@ const CustomerMenuItem: React.FC<CustomerMenuItemProps> = ({ item }) => {
     }, [state.items, item.id]);
 
     const handleIncrement = () => {
-        const inventory = item.inventory || 10; // 默认库存为10
+        const inventory = item.inventory || 10; // Default inventory is 10
         
-        // 检查是否达到库存限制
+        // Check if inventory limit reached
         if (quantity >= inventory) {
-            return; // 不执行任何操作
+            return; // Do nothing
         }
         
         const newQuantity = quantity + 1;
@@ -73,22 +66,13 @@ const CustomerMenuItem: React.FC<CustomerMenuItemProps> = ({ item }) => {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
             <div className="flex">
                 <div className="w-1/3">
-                    <div className="h-28 w-full overflow-hidden bg-gray-100">
-                        {item.image_url ? (
-                            <img
-                                src={item.image_url}
-                                alt={item.name}
-                                className="h-full w-full object-cover"
-                                onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                }}
-                            />
-                        ) : (
-                            <div className="h-full w-full flex items-center justify-center text-gray-400">
-                                <span className="text-xs">No Image</span>
-                            </div>
-                        )}
+                    <div className="h-28 w-full overflow-hidden bg-gray-100 rounded-lg">
+                        <MenuItemImage
+                            src={item.image_url}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                            fallbackClassName="h-full w-full"
+                        />
                     </div>
                 </div>
                 
@@ -100,17 +84,21 @@ const CustomerMenuItem: React.FC<CustomerMenuItemProps> = ({ item }) => {
                         </div>
                         <p className="text-sm text-gray-600 line-clamp-2 mt-1">{item.description}</p>
                         
-                        {/* 显示食材信息（如果有） */}
-                        {item.ingredients && item.ingredients.length > 0 && (
-                            <p className="text-xs text-gray-500 mt-1">
-                                {item.ingredients.join(', ')}
-                            </p>
-                        )}
+                        {/* Display feature info (if any) */}
+                        {(() => {
+                            const features = [item.feature_one, item.feature_two, item.feature_three]
+                                .filter(feature => feature && feature.trim() !== '');
+                            return features.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {features.join(', ')}
+                                </p>
+                            );
+                        })()}
                     </div>
                 
                     <div className="flex justify-between items-center mt-2">
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 capitalize">
-                            {categoryNames[item.category_id] || item.category_id}
+                            {item.category?.name || item.category_id}
                         </span>
                         
                         <div className="flex items-center gap-2">

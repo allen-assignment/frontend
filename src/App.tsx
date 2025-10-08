@@ -18,7 +18,7 @@ function App() {
             <div className="min-h-screen bg-white">
               <CustomerHeader showLoginButtons={true} isLoggedIn={false} />
               <div className="login-page-container">
-                <LoginPage onToggle={() => {}} />
+                <LoginPage />
               </div>
             </div>
           </CustomerCartProvider>
@@ -27,7 +27,18 @@ function App() {
         {/* Customer */}
         <Route path="/customer/*" element={<CustomerApp />} />
         
-        {/* Merchant */}
+        {/* Merchant Login */}
+        <Route path="/merchant/login" element={
+          <CustomerCartProvider>
+            <div className="min-h-screen bg-white">
+              <div className="login-page-container no-header">
+                <LoginPage />
+              </div>
+            </div>
+          </CustomerCartProvider>
+        } />
+        
+        {/* Merchant App */}
         <Route path="/merchant/*" element={<MerchantApp />} />
         
         {/* Default */}

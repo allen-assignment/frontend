@@ -169,19 +169,19 @@ export const CustomerCartProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const placeOrder = (addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void, currentTable: string | null) => {
         if (state.items.length > 0 && currentTable) {
-            // 将购物车转换为订单格式
+            // Convert cart to order format
             const orderItems = state.items.map(item => ({
                 menuItem: item,
                 quantity: item.quantity
             }));
             
-            // 添加订单到全局状态
+            // Add order to global state
             addOrder(currentTable, orderItems);
             
-            // 清空购物车
+            // Clear cart
             clearCart();
             
-            // 可以在这里添加成功提示
+            // Can add success message here
             alert(`Order placed successfully for Table ${currentTable}!`);
         }
     };

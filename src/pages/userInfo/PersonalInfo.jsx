@@ -29,10 +29,10 @@ const PersonalInfo = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white profile-page">
             <CustomerHeader showLoginButtons={true} isLoggedIn={true} />
             <main className="pt-16">
-                <div className="container mx-auto px-4 py-6">
+                <div className="py-6">
                     <div className="dashboard-container">
                         {/* 用户头像和信息 */}
                         <div className="avatar-wrapper">
@@ -70,6 +70,15 @@ const PersonalInfo = () => {
                         >
                             Birthday: {userInfo.birth_date || 'Not set'}
                         </Card>
+                        
+                        {userInfo.usertype === 1 && (
+                            <Card
+                                className="menu-card"
+                                onClick={() => goEdit("taste_preferences")}
+                            >
+                                Taste Preferences: {userInfo.taste_preferences || 'Not set'}
+                            </Card>
+                        )}
                     </div>
                 </div>
             </main>

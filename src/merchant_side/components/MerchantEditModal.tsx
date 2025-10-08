@@ -1,37 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
+import { menuAPI } from '../../services/api';
 
 interface MerchantEditModalProps {
     isOpen: boolean;
     onClose: () => void;
     editingItem: any;
+    categories?: { id: number; name: string }[];
 }
 
-const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, editingItem }) => {
+const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, editingItem, categories = [] }) => {
     const { updateMenuItem } = useApp();
     const [formData, setFormData] = useState(editingItem || {});
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     // Update formData when editingItem changes
     useEffect(() => {
         if (editingItem) {
             setFormData(editingItem);
+            setSelectedFile(null);
+            setPreviewUrl(null);
         }
     }, [editingItem]);
 
     if (!isOpen || !editingItem) return null;
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.name?.trim() || !formData.description?.trim() || !formData.price) {
             alert('Please fill in all required fields');
             return;
         }
 
-        updateMenuItem({
-            ...formData,
-            price: parseFloat(formData.price) || 0
-        });
-        onClose();
+        try {
+            await menuAPI.updateMenuItem({
+                id: parseInt(formData.id),
+                name: formData.name.trim(),
+                description: formData.description.trim(),
+                price: parseFloat(formData.price) || 0,
+                inventory: formData.inventory || 0,
+                category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
+                isAvailable: formData.isAvailable !== false ? 1 : 0,
+                file: selectedFile || undefined,
+            });
+
+            // Update local state
+            updateMenuItem({
+                ...formData,
+                price: parseFloat(formData.price) || 0,
+                image_url: previewUrl || formData.image_url,
+            });
+            
+            onClose();
+        } catch (error) {
+            console.error('Failed to update menu item:', error);
+            alert('Update failed, please try again');
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -42,14 +67,18 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
         }));
     };
 
-    const categories = [
-        { value: 'pizza', label: 'Pizza' },
-        { value: 'pasta', label: 'Pasta' },
-        { value: 'salad', label: 'Salad' },
-        { value: 'appetizer', label: 'Appetizer' },
-        { value: 'dessert', label: 'Dessert' },
-        { value: 'beverage', label: 'Beverage' }
-    ];
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+        } else {
+            setSelectedFile(null);
+            setPreviewUrl(null);
+        }
+    };
+
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -115,46 +144,31 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                             required
                         >
-                            {categories.map(category => (
-                                <option key={category.value} value={category.value}>
-                                    {category.label}
-                                </option>
-                            ))}
+                            {categories.length === 0 ? (
+                                <option value="">No categories available</option>
+                            ) : (
+                                <>
+                                    <option value="">Select a category</option>
+                                    {categories.map(category => (
+                                        <option key={category.id} value={category.id.toString()}>
+                                            {category.name}
+                                        </option>
+                                    ))}
+                                </>
+                            )}
                         </select>
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-bold text-gray-800 mb-2">Image URL</label>
-                        <input 
-                            type="url"
-                            name="image_url"
-                            value={formData.image_url || ''}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                            placeholder="https://example.com/image.jpg"
+                        <label className="block text-sm font-bold text-gray-800 mb-2">Upload Image</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="w-full"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Image will be previewed after selection and uploaded when saved.</p>
                     </div>
-
-                    {/* <div>
-                        <label className="block text-sm font-bold text-gray-800 mb-2">Ingredients</label>
-                        <input 
-                            type="text"
-                            name="ingredients"
-                            value={formData.ingredients?.join(', ') || ''}
-                            onChange={(e) => {
-                                const ingredients = e.target.value.split(',').map(ing => ing.trim()).filter(Boolean);
-                                setFormData((prev: any) => ({
-                                    ...prev,
-                                    ingredients
-                                }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                            placeholder="Comma-separated ingredients"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Separate multiple ingredients with commas
-                        </p>
-                    </div> */}
 
                     <div className="flex items-center">
                         <input
@@ -176,12 +190,12 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
                     </div>
 
                     {/* Image Preview */}
-                    {formData.image_url && (
+                    {(previewUrl || formData.image_url) && (
                         <div>
                             <label className="block text-sm font-bold text-gray-800 mb-2">Image Preview</label>
                             <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
                                 <img
-                                    src={formData.image_url}
+                                    src={previewUrl || formData.image_url}
                                     alt="Preview"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {

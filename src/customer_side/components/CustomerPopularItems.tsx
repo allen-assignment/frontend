@@ -2,19 +2,29 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Star, Plus, Minus } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
 import { useCart } from '../context/CustomerCartContext';
+import MenuItemImage from '../../shared/components/MenuItemImage';
 
 const CustomerPopularItems: React.FC = () => {
     const { state } = useApp();
     const { addToCart, removeFromCart, updateQuantity, state: cartState } = useCart();
     const [currentIndex, setCurrentIndex] = useState(0);
     
-    // 获取前几个可用的菜单项作为热门商品
-    const popularItems = useMemo(() => 
-        state.menuItems
+    // Prioritize recommended items, if no recommended items then use first 5 available menu items as popular items
+    const popularItems = useMemo(() => {
+        if (state.recommendedItems.length > 0) {
+            // Filter out unavailable recommended items
+            const availableRecommended = state.recommendedItems
+                .filter(item => item.isAvailable !== false)
+                .slice(0, 5);
+            console.log('🎯 Display available recommended items:', availableRecommended);
+            return availableRecommended;
+        }
+        const regularItems = state.menuItems
             .filter(item => item.isAvailable !== false)
-            .slice(0, 6),
-        [state.menuItems]
-    );
+            .slice(0, 5);
+        console.log('📋 Display regular popular items:', regularItems);
+        return regularItems;
+    }, [state.recommendedItems, state.menuItems]);
         
     const itemsPerPage = 2;
 
@@ -33,13 +43,13 @@ const CustomerPopularItems: React.FC = () => {
     const visibleItems = popularItems.slice(currentIndex, currentIndex + itemsPerPage);
     const showNavigationButtons = popularItems.length > itemsPerPage;
 
-    // 获取商品在购物车中的数量
+    // Get item quantity in cart
     const getItemQuantity = (itemId: string) => {
         const cartItem = cartState.items.find(item => item.id === itemId);
         return cartItem ? cartItem.quantity : 0;
     };
 
-    // 检查是否应该显示数量选择器
+    // Check if should show quantity selector
     const shouldShowQuantity = (itemId: string) => {
         return getItemQuantity(itemId) > 0;
     };
@@ -47,7 +57,7 @@ const CustomerPopularItems: React.FC = () => {
     // 检查是否达到库存限制
     const isInventoryReached = (item: any) => {
         const currentQuantity = getItemQuantity(item.id);
-        const inventory = item.inventory || 10; // 默认库存为10
+        const inventory = item.inventory || 10; // Default inventory is 10
         return currentQuantity >= inventory;
     };
 
@@ -55,9 +65,9 @@ const CustomerPopularItems: React.FC = () => {
         const currentQuantity = getItemQuantity(item.id);
         const inventory = item.inventory || 10;
         
-        // 检查是否达到库存限制
+        // Check if inventory limit reached
         if (currentQuantity >= inventory) {
-            return; // 不执行任何操作
+            return; // Do nothing
         }
         
         if (currentQuantity === 0) {
@@ -88,7 +98,9 @@ const CustomerPopularItems: React.FC = () => {
         <div className="py-6">
             <div className="flex items-center gap-2 mb-4">
                 <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                <h2 className="text-xl font-semibold">Popular Items</h2>
+                <h2 className="text-xl font-semibold">
+                    {state.recommendedItems.length > 0 ? 'Recommended for You' : 'Popular Items'}
+                </h2>
             </div>
 
             <div className="relative">
@@ -121,14 +133,12 @@ const CustomerPopularItems: React.FC = () => {
                         
                         return (
                             <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                                <div className="aspect-w-16 aspect-h-9">
-                                    <img 
-                                        src={item.image_url || '/placeholder-dish.jpg'} 
+                                <div className="w-full h-48">
+                                    <MenuItemImage
+                                        src={item.image_url}
                                         alt={item.name}
-                                        className="w-full h-48 object-cover"
-                                        onError={(e) => {
-                                            e.currentTarget.src = '/placeholder-dish.jpg';
-                                        }}
+                                        className="w-full h-full object-cover"
+                                        fallbackClassName="w-full h-full"
                                     />
                                 </div>
                                 <div className="p-4">

@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, QrCode } from 'lucide-react';
+import { X, QrCode, Store } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 interface CustomerWelcomeModalProps {
     isOpen: boolean;
@@ -9,8 +10,13 @@ interface CustomerWelcomeModalProps {
 
 const CustomerWelcomeModal: React.FC<CustomerWelcomeModalProps> = ({ isOpen, onClose }) => {
     const { state } = useApp();
+    const navigate = useNavigate();
     
     if (!isOpen) return null;
+
+    const handleMerchantView = () => {
+        navigate('/merchant/login');
+    };
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -32,6 +38,10 @@ const CustomerWelcomeModal: React.FC<CustomerWelcomeModalProps> = ({ isOpen, onC
                     <h2 className="text-xl font-semibold text-gray-800 mb-3">
                         Welcome to Smart Order
                     </h2>
+
+                    <p className="text-gray-600 mb-1">
+                        Merchant 1
+                    </p>
                     
                     <p className="text-gray-600 mb-4">
                         You are seated at Table {state.currentTable || '?'}
@@ -43,12 +53,23 @@ const CustomerWelcomeModal: React.FC<CustomerWelcomeModalProps> = ({ isOpen, onC
                         </p>
                     </div>
                     
-                    <button
-                        onClick={onClose}
-                        className="w-full py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
-                    >
-                        Start Ordering
-                    </button>
+                    {/* Button group */}
+                    <div className="space-y-3">
+                        <button
+                            onClick={onClose}
+                            className="w-full py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                        >
+                            Start Ordering
+                        </button>
+                        
+                        <button
+                            onClick={handleMerchantView}
+                            className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Store size={18} />
+                            Merchant View
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

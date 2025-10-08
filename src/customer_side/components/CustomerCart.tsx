@@ -6,7 +6,7 @@ import { useApp } from '../../shared/context/AppContext';
 import { orderAPI } from '../../services/api';
 
 const CustomerCart: React.FC = () => {
-    const { state, updateQuantity, removeFromCart, clearCart, placeOrder } = useCart();
+    const { state, updateQuantity, removeFromCart, clearCart } = useCart();
     const { state: appState, addOrder } = useApp();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
@@ -16,9 +16,9 @@ const CustomerCart: React.FC = () => {
     const handlePlaceOrder = async () => {
         if (state.items.length === 0) return;
 
-        // 检查是否已登录
+        // Check if logged in
         if (!appState.isLoggedIn || !appState.currentUser) {
-            // 直接显示弹框提示并跳转到登录页面
+            // Show alert and redirect to login page
             const shouldLogin = window.confirm('Please sign in to place an order. Click OK to go to the sign in page.');
             if (shouldLogin) {
                 navigate(`/login?redirect=${encodeURIComponent('/customer/cart')}`);
@@ -29,29 +29,63 @@ const CustomerCart: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // 准备订单数据
+            // Validate item IDs in cart
+            const validItems = state.items.filter(item => {
+                const itemId = parseInt(item.id);
+                const itemIdStr = String(item.id);
+                const isValidId = !isNaN(itemId) && itemId > 0 && !itemIdStr.startsWith('unmatched_');
+                if (!isValidId) {
+                    console.warn(`⚠️ Skipping invalid item ID: ${item.id} (${item.name})`);
+                }
+                return isValidId;
+            });
+
+            if (validItems.length === 0) {
+                alert('No valid items in cart, please add available items before placing order');
+                return;
+            }
+
+            if (validItems.length < state.items.length) {
+                const invalidCount = state.items.length - validItems.length;
+                alert(`${invalidCount} items in cart cannot be ordered, will only process valid items`);
+            }
+
+            // Prepare order data
             const orderData = {
+                merchant_id: 1, // Default merchant ID, should be obtained from context in real app
                 user_id: parseInt(appState.currentUser.id),
                 table_number: appState.currentTable || '1',
-                items: state.items.map(item => ({
+                items: validItems.map(item => ({
                     item_id: parseInt(item.id),
                     quantity: item.quantity
                 }))
             };
 
-            // 调用API创建订单
+            console.log('🛒 Preparing order data:', orderData);
+            console.log('👤 Current user info:', appState.currentUser);
+            console.log('🛍️ Cart items:', state.items);
+            console.log('✅ Valid items:', validItems);
+            console.log('🔍 Item ID details:', validItems.map(item => ({
+                id: item.id,
+                idType: typeof item.id,
+                parsedId: parseInt(item.id),
+                name: item.name
+            })));
+
+            // Call API to create order
             const response = await orderAPI.createOrder(orderData);
             
-            // 清空购物车
+            // Clear cart
             clearCart();
             
-            // 显示成功消息
+            // Show success message
             setOrderPlaced(true);
             
-            console.log('订单创建成功:', response);
-        } catch (error) {
-            console.error('下单失败:', error);
-            alert('下单失败，请重试');
+            console.log('✅ Order created successfully:', response);
+        } catch (error: any) {
+            console.error('❌ Order failed:', error);
+            console.error('❌ Error details:', error.response?.data);
+            alert(`Order failed: ${error.response?.data?.error || error.message || 'Please try again'}`);
         } finally {
             setIsSubmitting(false);
         }

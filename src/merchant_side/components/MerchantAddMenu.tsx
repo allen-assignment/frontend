@@ -1,21 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../shared/context/AppContext';
+import { menuAPI } from '../../services/api';
 
 const MerchantAddMenu: React.FC = () => {
-    const { addMenuItem } = useApp();
+    const { state, setCategories, dispatch } = useApp();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         price: '',
-        category_id: 'pizza',
-        image_url: '',
+        category_id: '',
         ingredients: '',
         inventory: ''
     });
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+
+    // Load categories on component mount
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                setLoadingCategories(true);
+                
+                // If categories already exist in global state, use them directly
+                if (state.categories && state.categories.length > 0) {
+                    // Set default category
+                    if (!formData.category_id) {
+                        setFormData(prev => ({
+                            ...prev,
+                            category_id: state.categories[0].id.toString()
+                        }));
+                    }
+                    setLoadingCategories(false);
+                    return;
+                }
+                
+                // Otherwise fetch category data from API
+                const response = await menuAPI.getAllMenuItems(1); // Default merchant ID is 1
+                
+                // Extract unique categories from menu data
+                const categoryMap = new Map();
+                response.menuItems.forEach((item: any) => {
+                    if (item.category && !categoryMap.has(item.category.id)) {
+                        categoryMap.set(item.category.id, {
+                            id: item.category.id,
+                            name: item.category.name
+                        });
+                    }
+                });
+                const uniqueCategories = Array.from(categoryMap.values());
+                
+                // Set category data to global state
+                setCategories(uniqueCategories);
+                
+                // Set default category
+                if (uniqueCategories.length > 0 && !formData.category_id) {
+                    setFormData(prev => ({
+                        ...prev,
+                        category_id: uniqueCategories[0].id.toString()
+                    }));
+                }
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+
+        loadCategories();
+    }, [state.categories, formData.category_id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -23,6 +80,18 @@ const MerchantAddMenu: React.FC = () => {
             ...prev,
             [name]: value
         }));
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+        } else {
+            setSelectedFile(null);
+            setPreviewUrl(null);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -36,13 +105,24 @@ const MerchantAddMenu: React.FC = () => {
                 return;
             }
 
-            // Create menu item
+            // Call API to add menu item
+            const response = await menuAPI.addMenuItem({
+                category_id: parseInt(formData.category_id),
+                name: formData.name.trim(),
+                description: formData.description.trim(),
+                price: parseFloat(formData.price),
+                inventory: parseInt(formData.inventory),
+                file: selectedFile || undefined,
+            });
+
+            
             const menuItem = {
+                id: response.id.toString(), 
                 name: formData.name.trim(),
                 description: formData.description.trim(),
                 price: parseFloat(formData.price),
                 category_id: formData.category_id,
-                image_url: formData.image_url.trim() || undefined,
+                image_url: response.image_url || previewUrl || '',
                 ingredients: formData.ingredients.trim() 
                     ? formData.ingredients.split(',').map(ing => ing.trim()).filter(Boolean)
                     : [],
@@ -50,7 +130,10 @@ const MerchantAddMenu: React.FC = () => {
                 isAvailable: true
             };
 
-            addMenuItem(menuItem);
+            dispatch({ 
+                type: 'ADD_MENU_ITEM', 
+                payload: menuItem
+            });
             
             // Show success message
             alert('Menu item added successfully!');
@@ -65,21 +148,13 @@ const MerchantAddMenu: React.FC = () => {
         }
     };
 
-    const categories = [
-        { value: 'pizza', label: 'Pizza' },
-        { value: 'pasta', label: 'Pasta' },
-        { value: 'salad', label: 'Salad' },
-        { value: 'appetizer', label: 'Appetizer' },
-        { value: 'dessert', label: 'Dessert' },
-        { value: 'beverage', label: 'Beverage' }
-    ];
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
             {/* Top Navigation Bar */}
             <div className="bg-gray-800 text-white w-full">
                 <div className="py-4">
-                    <div className="flex items-center justify-between px-4">
+                    <div className="flex items-center justify-between px-6">
                         <button 
                             className="p-2 hover:bg-gray-700 rounded-lg"
                             onClick={() => navigate('/merchant/menu')}
@@ -175,58 +250,50 @@ const MerchantAddMenu: React.FC = () => {
                                     onChange={handleChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                     required
+                                    disabled={loadingCategories}
                                 >
-                                    {categories.map(category => (
-                                        <option key={category.value} value={category.value}>
-                                            {category.label}
-                                        </option>
-                                    ))}
+                                    {loadingCategories ? (
+                                        <option value="">Loading categories...</option>
+                                    ) : state.categories.length === 0 ? (
+                                        <option value="">No categories available</option>
+                                    ) : (
+                                        <>
+                                            <option value="">Select a category</option>
+                                            {state.categories.map(category => (
+                                                <option key={category.id} value={category.id.toString()}>
+                                                    {category.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
                                 </select>
                             </div>
-                            
-                            {/* <div>
-                                <label className="block text-sm font-bold text-gray-800 mb-2">
-                                    Ingredients
-                                </label>
-                                <input 
-                                    type="text"
-                                    name="ingredients"
-                                    value={formData.ingredients}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                                    placeholder="Comma-separated ingredients (e.g., tomato, cheese, basil)"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Separate multiple ingredients with commas
-                                </p>
-                            </div> */}
+                        
                             
                             <div>
                                 <label className="block text-sm font-bold text-gray-800 mb-2">
-                                    Image URL
+                                    Upload Image
                                 </label>
-                                <input 
-                                    type="url"
-                                    name="image_url"
-                                    value={formData.image_url}
-                                    onChange={handleChange}
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/jpg,image/png"
+                                    onChange={handleFileChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                                    placeholder="https://example.com/image.jpg"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Optional: Enter a URL for the menu item image
+                                    Recommended formats: JPG or PNG. Image will be uploaded automatically when you save.
                                 </p>
                             </div>
 
                             {/* Image Preview */}
-                            {formData.image_url && (
+                            {previewUrl && (
                                 <div>
                                     <label className="block text-sm font-bold text-gray-800 mb-2">
                                         Image Preview
                                     </label>
                                     <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
                                         <img
-                                            src={formData.image_url}
+                                            src={previewUrl}
                                             alt="Preview"
                                             className="w-full h-full object-cover"
                                             onError={(e) => {

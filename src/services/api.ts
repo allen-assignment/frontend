@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// API基础配置
+// API base configuration
 const API_BASE_URL = 'http://localhost:8000';
 
-// 创建axios实例
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -11,18 +11,8 @@ const api = axios.create({
   },
 });
 
-// 请求拦截器
-api.interceptors.request.use(
-  (config) => {
-    // 可以在这里添加认证token等
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
-// 响应拦截器
+// Response interceptor
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -33,13 +23,14 @@ api.interceptors.response.use(
   }
 );
 
-// 类型定义
+// Type definitions
 export interface User {
-  id: number;
+  user_id: number;
   username: string;
   email: string;
   birth_date: string;
   usertype: number;
+  taste_preferences?: string;
 }
 
 export interface MenuCategory {
@@ -52,13 +43,17 @@ export interface MenuItem {
   id: number;
   name: string;
   image_url: string;
-  price: number;
+  price: string;
   inventory: number;
   category: {
     id: number;
     name: string;
   };
-  description: string;
+  merchant_id: number;
+  description?: string;
+  feature_one?: string;
+  feature_two?: string;
+  feature_three?: string;
 }
 
 export interface OrderItem {
@@ -68,6 +63,7 @@ export interface OrderItem {
 
 export interface Order {
   order_id: number;
+  merchant_id: number;
   user_id: number;
   user_name: string;
   table_number: string;
@@ -83,10 +79,10 @@ export interface Order {
   }[];
 }
 
-// OCR相关类型定义
+// OCR related type definitions
 export interface OCRMenuItem {
   name: string;
-  price: number;
+  price: number | string; // Support both number and string for API compatibility
   description?: string;
   category?: string;
   tags?: string[];
@@ -94,27 +90,28 @@ export interface OCRMenuItem {
 }
 
 export interface OCRResponse {
-  ok: boolean;
-  mode: string;
+  preview_id: string;
   items: OCRMenuItem[];
   error?: string;
 }
 
-// 用户相关API
+// User related API
 export const userAPI = {
-  // 用户注册
+  // User registration
   register: async (userData: {
     username: string;
     password: string;
     email?: string;
     birth_date?: string;
     usertype?: number;
+    merchantName?: string;
+    tastePreferences?: string;
   }) => {
     const response = await api.post('/user/register', userData);
     return response.data;
   },
 
-  // 用户登录
+  // User login
   login: async (credentials: {
     username: string;
     password: string;
@@ -123,17 +120,28 @@ export const userAPI = {
     return response.data;
   },
 
-  // 根据ID获取用户信息
+  // Get user info by ID
   getUserById: async (userId: number) => {
     const response = await api.get(`/user/getUserById?user_id=${userId}`);
     return response.data;
   },
+
+  // Vector search
+  vectorSearch: async (searchData: {
+    text: string;
+    top_k?: number;
+    restaurant_id?: string;
+  }) => {
+    const response = await api.post('/user/vector-search', searchData);
+    return response.data;
+  },
 };
 
-// 菜单相关API
+// Menu related API
 export const menuAPI = {
-  // 添加菜单分类
+  // Add menu category
   addCategory: async (categoryData: {
+    merchant_id: number;
     category_name: string;
     description?: string;
   }) => {
@@ -141,50 +149,79 @@ export const menuAPI = {
     return response.data;
   },
 
-  // 添加菜单项
+  // Add menu item (supports file upload)
   addMenuItem: async (itemData: {
     category_id: number;
-    image_url: string;
     name: string;
     price: number;
     inventory: number;
     description?: string;
+    file?: File;
   }) => {
-    const response = await api.post('/menu/item/add/', itemData);
-    return response.data;
-  },
+    const formData = new FormData();
+    formData.append('category_id', String(itemData.category_id));
+    formData.append('name', String(itemData.name));
+    formData.append('price', String(itemData.price));
+    formData.append('inventory', String(itemData.inventory));
+    if (itemData.description != null) formData.append('description', String(itemData.description));
+    if (itemData.file) formData.append('file', itemData.file);
 
-  // 获取所有菜单项
-  getAllMenuItems: async (): Promise<{ menuItems: MenuItem[] }> => {
-    const response = await api.get('/menu/items/');
-    return response.data;
-  },
-
-  // 获取所有分类（从菜单项中提取）
-  getAllCategories: async (): Promise<{ categories: { id: number; name: string; description: string }[] }> => {
-    const response = await api.get('/menu/items/');
-    const menuItems = response.data.menuItems;
-    
-    // 从菜单项中提取唯一的分类
-    const categoryMap = new Map();
-    menuItems.forEach((item: MenuItem) => {
-      if (item.category && !categoryMap.has(item.category.id)) {
-        categoryMap.set(item.category.id, {
-          id: item.category.id,
-          name: item.category.name,
-          description: '' // 菜单API中没有分类描述
-        });
-      }
+    const response = await api.post('/menu/item/add/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
-    
-    return { categories: Array.from(categoryMap.values()) };
+    return response.data;
+  },
+
+  // Update menu item (supports file upload)
+  updateMenuItem: async (itemData: {
+    id?: number;
+    item_id?: number;
+    name?: string;
+    price?: number;
+    inventory?: number;
+    description?: string;
+    category_id?: number;
+    isAvailable?: number;
+    file?: File;
+  }) => {
+    const formData = new FormData();
+    if (itemData.id != null) formData.append('id', String(itemData.id));
+    if (itemData.item_id != null) formData.append('item_id', String(itemData.item_id));
+    if (itemData.name != null) formData.append('name', String(itemData.name));
+    if (itemData.price != null) formData.append('price', String(itemData.price));
+    if (itemData.inventory != null) formData.append('inventory', String(itemData.inventory));
+    if (itemData.description != null) formData.append('description', String(itemData.description));
+    if (itemData.category_id != null) formData.append('category_id', String(itemData.category_id));
+    if (itemData.isAvailable != null) formData.append('isAvailable', String(itemData.isAvailable));
+    if (itemData.file) formData.append('file', itemData.file);
+
+    const response = await api.post('/menu/item/update/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data; 
+  },
+
+  // Delete menu item
+  deleteMenuItem: async (itemData: {
+    id?: number;
+    item_id?: number;
+  }) => {
+    const response = await api.post('/menu/item/delete/', itemData);
+    return response.data;
+  },
+
+  // Get all menu items
+  getAllMenuItems: async (merchantId: number): Promise<{ menuItems: MenuItem[] }> => {
+    const response = await api.get(`/menu/items/?merchant=${merchantId}`);
+    return response.data;
   },
 };
 
-// 订单相关API
+// Order related API
 export const orderAPI = {
-  // 创建订单
+  // Create order
   createOrder: async (orderData: {
+    merchant_id: number;
     user_id: number;
     table_number: string;
     items: OrderItem[];
@@ -193,31 +230,42 @@ export const orderAPI = {
     return response.data;
   },
 
-  // 获取订单列表
-  getOrders: async (userId?: number): Promise<{ orders: Order[] }> => {
-    const url = userId ? `/order/getOrders/?user_id=${userId}` : '/order/getOrders/';
-    const response = await api.get(url);
+  // Get merchant order list
+  getOrders: async (merchant_id: number): Promise<{ orders: Order[] }> => {
+    const response = await api.get(`/order/getOrders/?merchant_id=${merchant_id}`);
     return response.data;
   },
 
-  // 取消订单
-  cancelOrder: async (orderId: number) => {
-    const response = await api.post('/order/cancel/', { order_id: orderId });
+  // Get user order history
+  getUserOrders: async (user_id: number, merchant_id: number): Promise<{ orders: Order[] }> => {
+    const response = await api.get(`/order/getOrders/?user_id=${user_id}&merchant_id=${merchant_id}`);
+    return response.data;
+  },
+
+  // Update order status (cancel or pay)
+  updateOrderStatus: async (orderData: {
+    merchant_id: number;
+    order_id: number;
+    status?: number;
+  }) => {
+    const response = await api.post('/order/statuschanged/', orderData);
+    return response.data;
+  },
+
+  // Cancel order (maintain backward compatibility)
+  cancelOrder: async (orderId: number, merchantId: number) => {
+    const response = await api.post('/order/statuschanged/', { 
+      order_id: orderId,
+      merchant_id: merchantId,
+      status: 1
+    });
     return response.data;
   },
 };
 
-// OCR相关API - 使用新的backend OCR端点
+// OCR related API - menu recognition interface
 export const ocrAPI = {
-
-  // // 处理图片OCR识别
-  // processImage: async (imageData: string) => {
-  //   const response = await api.post('/ocr/process/', {
-  //     image: imageData
-
-
-
-  // 上传菜单图片进行OCR识别
+  // Upload menu image for OCR recognition
   uploadMenuImage: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -230,23 +278,14 @@ export const ocrAPI = {
     return response.data;
   },
 
-  // // 获取可用的OCR提供商
-  // getProviders: async () => {
-  //   const response = await api.get('/ocr/providers/');
-  //   return response.data;
-  // },
 
-  // 上传菜单图片并获取CSV格式结果
-  uploadMenuImageAsCSV: async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await api.post('/menu/ocr/upload/?format=csv', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      responseType: 'blob', // 用于下载CSV文件
-    });
+  // Import OCR recognized menu items to database
+  importOCRItems: async (importData: {
+    merchant_id: number;
+    preview_id?: string;
+    items?: OCRMenuItem[];
+  }) => {
+    const response = await api.post('/menu/ocr/import/', importData);
     return response.data;
   },
 };

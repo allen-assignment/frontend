@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, UserCircle, Store, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, UserCircle, RotateCcw, ArrowLeft } from 'lucide-react';
 import { useCart } from '../context/CustomerCartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../shared/context/AppContext';
@@ -11,7 +11,7 @@ interface CustomerHeaderProps {
 
 const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLoggedIn }) => {
     const { state } = useCart();
-    const { state: appState } = useApp();
+    const { state: appState, logout } = useApp();
     const navigate = useNavigate();
     const location = useLocation();
     const isCartPage = location.pathname === '/customer/cart';
@@ -58,7 +58,7 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
                                     • Table {appState.currentTable}
                                 </span>
                             )}
-                            {/* 开发环境重置按钮 */}
+                            {/* Development environment reset button */}
                             {process.env.NODE_ENV === 'development' && (
                                 <button
                                     className="text-xs text-gray-400 hover:text-gray-600 ml-2"
@@ -77,18 +77,29 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
 
                 {!(isPersonalInfoPage || isEditPage) && (
                     <div className="flex items-center gap-4">
-                        {/* 连接状态指示器 */}
+                        {/* Connection status indicator */}
                         <div className={`w-2 h-2 rounded-full ${appState.isConnected ? 'bg-green-500' : 'bg-red-500'}`} 
                              title={appState.isConnected ? 'Connected' : 'Disconnected'} />
                         
-                        {/* Merchant Mode Button */}
+                        {/* Reset Button */}
                         <button
-                            className="flex items-center gap-2 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 transition-colors border border-blue-200 rounded-md hover:bg-blue-50"
-                            onClick={() => navigate('/merchant')}
-                            title="Switch to Merchant Mode"
+                            className="flex items-center gap-2 px-3 py-1 text-sm text-orange-600 hover:text-orange-800 transition-colors border border-orange-200 rounded-md hover:bg-orange-50"
+                            onClick={() => {
+                                console.log('🔄 Reset button clicked');
+                                // Clear user login state
+                                logout();
+                                console.log('✅ User login state cleared');
+                                // Reset welcome page state
+                                localStorage.removeItem('hasSeenWelcome');
+                                console.log('✅ Welcome page state reset');
+                                // Force page refresh to ensure state reset
+                                window.location.reload();
+                                console.log('✅ Page refreshed');
+                            }}
+                            title="Reset to Welcome Page"
                         >
-                            <Store size={16} />
-                            Merchant
+                            <RotateCcw size={16} />
+                            Reset
                         </button>
 
                         {showLoginButtons && (

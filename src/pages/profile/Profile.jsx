@@ -56,10 +56,10 @@ const ProfileDashboard = ({ userId }) => {
     );
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white profile-page">
             <CustomerHeader showLoginButtons={true} isLoggedIn={true} />
             <main className="pt-16">
-                <div className="container mx-auto px-4 py-6">
+                <div className="py-6">
                     <div className="dashboard-container">
                         <div className="avatar-wrapper">
                             <Image
@@ -84,7 +84,7 @@ const ProfileDashboard = ({ userId }) => {
                         <div className="order-title-container">
                             <h5 className="order-title mb-3">Order History</h5>
                         </div>
-                        <OrderHistory userId={userId} />
+                        <OrderHistory userId={userId} merchantId={userInfo?.merchant_id} />
                     </div>
                 </div>
             </main>

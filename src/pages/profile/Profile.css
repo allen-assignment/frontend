@@ -1,4 +1,5 @@
-body {
+/* 移除全局 body 样式，避免影响其他页面 */
+.profile-page {
     margin: 0;
     padding: 0;
     /*background: url('') no-repeat center center fixed;*/
@@ -29,6 +30,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
 }
 
 .avatar-wrapper {
@@ -36,14 +38,13 @@ body {
     flex-direction: row !important;
     align-items: center;
     justify-content: flex-start;
-    width: 90%;
+    width: 100%;
     max-width: 600px;
     padding: 1rem;
     background-color: #f0f0f4;
     border-radius: 12px;
     margin-bottom: 1rem;
     /*box-shadow: 0 2px 8px rgba(0,0,0,0.05);*/
-
 }
 
 .avatar-img {
@@ -70,7 +71,7 @@ body {
 }
 
 .menu-card {
-    width: 90%;
+    width: 100%;
     max-width: 600px !important;
     background-color: #f0f0f4 !important;
     padding: 1rem !important;
@@ -89,13 +90,13 @@ body {
 
 @media (max-width: 480px) {
     .dashboard-container {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 
     .avatar-wrapper,
     .menu-card {
-        width: 95%;
+        width: 100%;
     }
 
     .avatar-wrapper {

@@ -10,7 +10,8 @@ const OrderHistory = ({ userId }) => {
 
     useEffect(() => {
         if (userId) {
-            orderAPI.getOrders(parseInt(userId))
+            // 使用 getUserOrders 方法，需要传递 user_id 和 merchant_id
+            orderAPI.getUserOrders(parseInt(userId), 1) // 默认 merchant_id 为 1
                 .then((res) => {
                     setOrders(res.orders || []);
                 })

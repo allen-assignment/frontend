@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Users, Store, Camera } from 'lucide-react';
+import { BarChart3, Users, Store, Camera, ShoppingCart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const MerchantBottomNavigation: React.FC = () => {
@@ -28,10 +28,15 @@ const MerchantBottomNavigation: React.FC = () => {
             icon: Camera,
             label: 'OCR'
         },
+        // {
+        //     path: '/merchant/members',
+        //     icon: Users,
+        //     label: 'Members'
+        // }
         {
-            path: '/merchant/members',
-            icon: Users,
-            label: 'Members'
+            path: '/merchant/orders',
+            icon: ShoppingCart,
+            label: 'Orders'
         }
     ];
 
