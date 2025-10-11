@@ -30,21 +30,18 @@ const MerchantMenuManagement: React.FC = () => {
             try {
                 setError(null);
                 
-                // Check if data already exists and merchant ID matches
-                const merchantId = state.currentUser?.merchant_id;
-                if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0 && merchantId) {
-                    console.log('📋 Using cached menu data');
+                // Check if data already exists
+                if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0) {
+                    console.log('Using cached menu data');
                     setLoading(false);
                     return;
                 }
                 
-                console.log('🔄 Fetching menu data from API...');
+                console.log('Fetching menu data from API...');
                 setLoading(true);
-                if (!merchantId) {
-                    throw new Error('Merchant ID not found. Please login again.');
-                }
                 
-                const response = await menuAPI.getAllMenuItems(merchantId);
+                // Get menu items (merchant_id from token)
+                const response = await menuAPI.getAllMenuItems();
                 console.log('Menu data from API:', response.menuItems);
                 
                 // Check if component is still mounted
@@ -72,15 +69,24 @@ const MerchantMenuManagement: React.FC = () => {
                     price: parseFloat(item.price.toString()),
                     image_url: item.image_url,
                     category_id: item.category?.id?.toString() || '1',
-                    category_name: item.category?.name || 'Unknown',
-                    isAvailable: item.inventory > 0,
-                    inventory: item.inventory
+                    category: item.category ? {
+                        id: item.category.id,
+                        name: item.category.name
+                    } : undefined,
+                    isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                    inventory: item.inventory || 0
                 }));
                 
                 // Update global state
                 dispatch({ 
                     type: 'SET_MENU_ITEMS', 
                     payload: convertedItems
+                });
+                
+                // Mark menu data as loaded
+                dispatch({
+                    type: 'SET_MENU_DATA_LOADED',
+                    payload: true
                 });
             } catch (err: any) {
                 console.error('Failed to fetch menu:', err);
@@ -129,7 +135,7 @@ const MerchantMenuManagement: React.FC = () => {
     const handleDeleteItem = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this menu item?')) {
             try {
-                console.log('🗑️ Preparing to delete menu item:', {
+                console.log('Preparing to delete menu item:', {
                     id: id,
                     parsedId: parseInt(id),
                     requestData: { id: parseInt(id) }
@@ -139,14 +145,14 @@ const MerchantMenuManagement: React.FC = () => {
                     id: parseInt(id)
                 });
                 
-                console.log('✅ Delete API response:', response);
+                console.log('Delete API response:', response);
                 
                 // Remove from local state
                 deleteMenuItem(id);
-                console.log('✅ Local state updated');
+                console.log('Local state updated');
             } catch (error: any) {
-                console.error('❌ Failed to delete menu item:', error);
-                console.error('❌ Error details:', error.response?.data);
+                console.error('Failed to delete menu item:', error);
+                console.error('Error details:', error.response?.data);
                 alert(`Delete failed: ${error.response?.data?.error || error.message || 'Please try again'}`);
             }
         }
@@ -293,7 +299,7 @@ const MerchantMenuManagement: React.FC = () => {
                                         {/* Category and Ingredients */}
                                         <div className="mb-4">
                                             <p className="text-sm text-gray-500">
-                                                Category: {(item as any).category_name || 'Unknown'}
+                                                Category: {item.category?.name || 'Unknown'}
                                             </p>
                                             {/* {item.ingredients && item.ingredients.length > 0 && (
                                                 <p className="text-sm text-gray-500">

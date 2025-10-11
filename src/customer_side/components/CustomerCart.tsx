@@ -35,7 +35,7 @@ const CustomerCart: React.FC = () => {
                 const itemIdStr = String(item.id);
                 const isValidId = !isNaN(itemId) && itemId > 0 && !itemIdStr.startsWith('unmatched_');
                 if (!isValidId) {
-                    console.warn(`⚠️ Skipping invalid item ID: ${item.id} (${item.name})`);
+                    console.warn(`Skipping invalid item ID: ${item.id} (${item.name})`);
                 }
                 return isValidId;
             });
@@ -50,10 +50,18 @@ const CustomerCart: React.FC = () => {
                 alert(`${invalidCount} items in cart cannot be ordered, will only process valid items`);
             }
 
+            // Extract merchant_id from first item in cart (all items should be from same merchant)
+            const merchantId = validItems[0]?.merchant_id;
+            
+            if (!merchantId) {
+                console.error('Cart items missing merchant_id:', validItems);
+                alert('Cannot place order: merchant information is missing. Please refresh the page and try again.');
+                return;
+            }
+
             // Prepare order data
             const orderData = {
-                merchant_id: 1, // Default merchant ID, should be obtained from context in real app
-                user_id: parseInt(appState.currentUser.id),
+                merchant_id: merchantId,  // Get merchant ID from cart items
                 table_number: appState.currentTable || '1',
                 items: validItems.map(item => ({
                     item_id: parseInt(item.id),
@@ -61,14 +69,16 @@ const CustomerCart: React.FC = () => {
                 }))
             };
 
-            console.log('🛒 Preparing order data:', orderData);
-            console.log('👤 Current user info:', appState.currentUser);
-            console.log('🛍️ Cart items:', state.items);
-            console.log('✅ Valid items:', validItems);
-            console.log('🔍 Item ID details:', validItems.map(item => ({
+            console.log('Preparing order data:', orderData);
+            console.log('Current user info:', appState.currentUser);
+            console.log('Merchant ID:', merchantId);
+            console.log('Cart items:', state.items);
+            console.log('Valid items:', validItems);
+            console.log('Item ID details:', validItems.map(item => ({
                 id: item.id,
                 idType: typeof item.id,
                 parsedId: parseInt(item.id),
+                merchant_id: item.merchant_id,
                 name: item.name
             })));
 
@@ -81,10 +91,10 @@ const CustomerCart: React.FC = () => {
             // Show success message
             setOrderPlaced(true);
             
-            console.log('✅ Order created successfully:', response);
+            console.log('Order created successfully:', response);
         } catch (error: any) {
-            console.error('❌ Order failed:', error);
-            console.error('❌ Error details:', error.response?.data);
+            console.error('Order failed:', error);
+            console.error('Error details:', error.response?.data);
             alert(`Order failed: ${error.response?.data?.error || error.message || 'Please try again'}`);
         } finally {
             setIsSubmitting(false);
@@ -123,11 +133,6 @@ const CustomerCart: React.FC = () => {
                         Estimated waiting time: 15-20 min
                     </p>
                     
-                    <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                        <p className="text-sm text-blue-800">
-                            💡 You can check your order status in the merchant dashboard
-                        </p>
-                    </div>
                     
                     <button 
                         onClick={handleStartNewOrder}

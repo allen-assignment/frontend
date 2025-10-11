@@ -9,7 +9,7 @@ interface OCRResult {
   price: number;
   description: string;
   category: string;
-  // 扩展字段，支持完整的菜单项数据
+  // Extended fields to support complete menu item data
   tags?: string[];
   inventory?: number;
   image_url?: string;
@@ -40,18 +40,21 @@ const MerchantOCR: React.FC = () => {
   const loadCategories = async () => {
     setLoadingCategories(true);
     try {
-      const merchantId = state.currentUser?.merchant_id;
-      if (!merchantId) {
-        throw new Error('Merchant ID not found. Please login again.');
+      // Check token existence (backend will auto extract merchant_id from token)
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        console.log('Token not found, waiting for login...');
+        setLoadingCategories(false);
+        return;
       }
       
       // Get menu items which include category information
-      const response = await menuAPI.getAllMenuItems(merchantId);
-      console.log('📋 Loaded menu items with categories:', response.menuItems);
+      const response = await menuAPI.getAllMenuItems();
+      console.log('Loaded menu items with categories:', response.menuItems);
       
       // Check if there are any menu data
       const hasMenuData = response.menuItems && response.menuItems.length > 0;
-      console.log('📋 Has menu data:', hasMenuData);
+      console.log('Has menu data:', hasMenuData);
       
       if (hasMenuData) {
         // Extract unique categories from menu items
@@ -67,10 +70,10 @@ const MerchantOCR: React.FC = () => {
         });
         
         const extractedCategories = Array.from(categoryMap.values());
-        console.log('📋 Extracted categories from existing menu data:', extractedCategories);
+        console.log('Extracted categories from existing menu data:', extractedCategories);
         setCategories(extractedCategories);
       } else {
-        console.log('📋 No existing menu data found, categories will be empty');
+        console.log('No existing menu data found, categories will be empty');
         setCategories([]);
       }
     } catch (error) {
@@ -82,10 +85,6 @@ const MerchantOCR: React.FC = () => {
     }
   };
 
-  // Load categories when component mounts
-  useEffect(() => {
-    loadCategories();
-  }, [state.currentUser?.merchant_id]);
 
   // Clear OCR data when merchant ID changes
   useEffect(() => {
@@ -112,7 +111,7 @@ const MerchantOCR: React.FC = () => {
   const parseOCRResults = (ocrData: any): OCRResult[] => {
     const results: OCRResult[] = [];
     
-    console.log('🔍 Parsing OCR data:', ocrData);
+    console.log('Parsing OCR data:', ocrData);
     
     // Check if API response is successful - adapt to actual returned data structure
     if (!ocrData || !ocrData.items || !Array.isArray(ocrData.items)) {
@@ -122,7 +121,7 @@ const MerchantOCR: React.FC = () => {
     
     // Parse menu items returned by backend OCR API
     ocrData.items.forEach((item: any, index: number) => {
-      console.log(`📝 Processing menu item ${index}:`, item);
+      console.log(`Processing menu item ${index}:`, item);
       
       // Check if required fields exist, support multiple possible field names
       const itemName = item.name || item.item_name || item.title || item.dish_name;
@@ -137,7 +136,7 @@ const MerchantOCR: React.FC = () => {
           price: parseFloat(itemPrice) || 0,
           description: itemDescription || `Menu item recognized from image: ${itemName}`,
           category: itemCategory || 'UNCATEGORIZED',
-          // 初始化所有扩展字段
+          // Initialize all extended fields
           tags: item.tags || [],
           inventory: item.inventory || 10,
           image_url: item.image_url || "",
@@ -146,13 +145,13 @@ const MerchantOCR: React.FC = () => {
           feature_two: item.feature_two || "",
           feature_three: item.feature_three || ""
         });
-        console.log(`✅ Successfully added menu item: ${itemName}`);
+        console.log(`Successfully added menu item: ${itemName}`);
       } else {
-        console.warn(`⚠️ Skipping invalid menu item ${index} (missing name):`, item);
+        console.warn(`Skipping invalid menu item ${index} (missing name):`, item);
       }
     });
     
-    console.log(`✅ Parsing completed, identified ${results.length} valid menu items`);
+    console.log(`Parsing completed, identified ${results.length} valid menu items`);
     return results;
   };
 
@@ -194,21 +193,21 @@ const MerchantOCR: React.FC = () => {
 
   // OCR processing function - API
   const processImage = async () => {
-    console.log('🔍 processImage function called');
-    console.log('📸 Processing image - selectedFile:', selectedFile, 'uploadedImage:', uploadedImage);
+    console.log('processImage function called');
+    console.log('Processing image - selectedFile:', selectedFile, 'uploadedImage:', uploadedImage);
     
     if (!selectedFile && !uploadedImage) {
-      console.warn('⚠️ No image selected');
+      console.warn('No image selected');
       setError('Please select an image first');
       return;
     }
 
-    console.log('🚀 Starting OCR recognition...');
+    console.log('Starting OCR recognition...');
     setIsProcessing(true);
     setError(null);
     
     try {
-      console.log('🔍 Starting OCR recognition...');
+      console.log('Starting OCR recognition...');
       // Call OCR API
       const fileToProcess = selectedFile || uploadedImage;
       if (!fileToProcess) {
@@ -216,32 +215,38 @@ const MerchantOCR: React.FC = () => {
         return;
       }
       const ocrResult = await callOCRAPI(fileToProcess);
-      console.log('📊 OCR API raw response:', ocrResult);
+      console.log('OCR API raw response:', ocrResult);
       
       // Save preview_id
       if (ocrResult.preview_id) {
         setPreviewId(ocrResult.preview_id);
-        console.log('📋 Saved preview_id:', ocrResult.preview_id);
+        console.log('Saved preview_id:', ocrResult.preview_id);
       }
       
       // Process API returned results
       const extractedItems = parseOCRResults(ocrResult);
-      console.log('✅ Parsed recognition results:', extractedItems);
+      console.log('Parsed recognition results:', extractedItems);
       
       if (extractedItems.length > 0) {
-        console.log(`🎉 Recognition successful! Identified ${extractedItems.length} dishes`);
+        console.log(`Recognition successful! Identified ${extractedItems.length} dishes`);
         setOcrResults(extractedItems);
         setOriginalOcrResults([...extractedItems]); // Store original results for comparison
         setShowResults(true);
+        
+        // Load categories for editing (only if not already loaded)
+        if (categories.length === 0) {
+          console.log('Loading categories for editing...');
+          loadCategories();
+        }
       } else {
-        console.warn('⚠️ Recognition results are empty');
+        console.warn('Recognition results are empty');
         setError('No dishes recognized, please try another image');
       }
     } catch (apiError) {
-      console.error('❌ OCR API call failed:', apiError);
+      console.error('OCR API call failed:', apiError);
       setError(`OCR recognition failed: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
     } finally {
-      console.log('🏁 OCR processing completed');
+      console.log('OCR processing completed');
       setIsProcessing(false);
     }
   };
@@ -263,10 +268,10 @@ const MerchantOCR: React.FC = () => {
     }
   };
 
-  // Load local test image
-  const handleLoadTestImage = async () => {
+  // Load demo image for testing
+  const handleLoadDemoImage = async () => {
     try {
-      // Directly read local menu.jpg file
+      // Load menu.jpg from public directory
       const response = await fetch('/menu.jpg');
       const blob = await response.blob();
       const file = new File([blob], 'menu.jpg', { type: 'image/jpeg' });
@@ -286,13 +291,12 @@ const MerchantOCR: React.FC = () => {
       setError(null);
       setIsCompleting(false);
       
-      console.log('✅ menu.jpg loaded successfully, please click Start Recognition to test');
+      console.log('Demo image loaded successfully, click Start Recognition to test');
     } catch (error) {
-      console.error('❌ Failed to load menu.jpg:', error);
-      setError('Failed to load test image, please check if file exists');
+      console.error('Failed to load demo image:', error);
+      setError('Failed to load demo image, please check if file exists in public directory');
     }
   };
-
 
   const handleEditItem = (item: OCRResult) => {
     setEditingItem(item);
@@ -330,10 +334,6 @@ const MerchantOCR: React.FC = () => {
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">OCR Menu Recognition</h1>
             <p className="text-gray-600 mt-2">Automatically extract menu information from photos</p>
-            {/* <div className="mt-2 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">Azure Computer Vision API Connected</span>
-            </div> */}
           </div>
 
           {/* Status Display */}
@@ -356,11 +356,11 @@ const MerchantOCR: React.FC = () => {
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  ✅ Recognition successful! Identified {ocrResults.length} dishes
+                  Recognition successful! Identified {ocrResults.length} dishes
                 </div>
                 {previewId && (
                   <div className="text-sm text-green-600">
-                    📋 Preview ID: {previewId} (valid for 15 minutes)
+                    Preview ID: {previewId} (valid for 15 minutes)
                   </div>
                 )}
               </div>
@@ -387,7 +387,7 @@ const MerchantOCR: React.FC = () => {
                   onChange={handleImageUpload}
                   className="hidden"
                 />
-                <div className="flex gap-3 justify-center">
+                <div className="flex justify-center gap-3">
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
@@ -396,15 +396,15 @@ const MerchantOCR: React.FC = () => {
                     Choose Image
                   </button>
                   <button
-                    onClick={handleLoadTestImage}
+                    onClick={handleLoadDemoImage}
                     className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
                   >
                     <Image className="w-4 h-4 inline mr-2" />
-                    Load Test Image
+                    Load Demo
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Supports JPG, PNG, PDF format menu images, or click "Load Test Image" to use local test image
+                  Supports JPG, PNG, PDF format menu images, or load a demo image for testing
                 </p>
               </div>
             ) : (
@@ -440,7 +440,7 @@ const MerchantOCR: React.FC = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
-                      console.log('🔘 Start Recognition button clicked');
+                      console.log('Start Recognition button clicked');
                       processImage();
                     }}
                     disabled={isProcessing}
@@ -466,14 +466,6 @@ const MerchantOCR: React.FC = () => {
                   >
                     <Upload className="w-4 h-4 inline mr-2" />
                     Change Image
-                  </button>
-                  
-                  <button
-                    onClick={handleLoadTestImage}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <Image className="w-4 h-4 inline mr-2" />
-                    Load Test Image
                   </button>
                 </div>
               </div>
@@ -534,8 +526,8 @@ const MerchantOCR: React.FC = () => {
                       if (ocrResults.length > 0 && !isCompleting) {
                         setIsCompleting(true);
                         try {
-                          console.log(`🚀 Starting to import ${ocrResults.length} menu items to database`);
-                          console.log('📋 Menu items to import:', ocrResults);
+                          console.log(`Starting to import ${ocrResults.length} menu items to database`);
+                          console.log('Menu items to import:', ocrResults);
                           
                           // Check if there are modifications (including deletions)
                           // First check if the number of items changed (deletion/addition)
@@ -556,58 +548,53 @@ const MerchantOCR: React.FC = () => {
                           
                           const hasModifications = itemCountChanged || hasItemModifications;
                           
-                          console.log(`🔍 Check modification status: ${hasModifications ? 'Modified' : 'Not modified'}`);
-                          console.log(`📊 Item count comparison: current=${ocrResults.length}, original=${originalOcrResults.length}, changed=${itemCountChanged}`);
-                          console.log(`📊 Item modifications detected: ${hasItemModifications}`);
+                          console.log(`Check modification status: ${hasModifications ? 'Modified' : 'Not modified'}`);
+                          console.log(`Item count comparison: current=${ocrResults.length}, original=${originalOcrResults.length}, changed=${itemCountChanged}`);
+                          console.log(`Item modifications detected: ${hasItemModifications}`);
                           
                           let successCount = 0;
                           let errorCount = 0;
                           
                           if (hasModifications) {
                             // Modified: pass merchant_id and all items data, no preview_id needed
-                            console.log(`📝 Modifications detected, using items method for import (pass complete item data, no preview_id)`);
+                            console.log(`Modifications detected, using items method for import (pass complete item data, no preview_id)`);
                             
                             // Check if there are no categories (no existing menu data)
                             const hasNoCategories = categories.length === 0;
-                            console.log(`📋 No categories available: ${hasNoCategories}`);
+                            console.log(`No categories available: ${hasNoCategories}`);
                             
                             if (hasNoCategories) {
                               // No categories: use OCR batch import API with all items data, no preview_id
-                              console.log('📋 No existing menu data, using OCR batch import with all items data');
-                              
-                              const merchantId = state.currentUser?.merchant_id;
-                              if (!merchantId) {
-                                throw new Error('Merchant ID not found. Please login again.');
-                              }
+                              console.log('No existing menu data, using OCR batch import with all items data');
                               
                               // Convert OCR results to API format with all required fields
+                              // merchant_id will be obtained from token automatically
                               const itemsForImport = ocrResults.map(item => ({
-                                name: item.name || "", // 必需字段
-                                price: item.price.toString(), // 必需字段，转换为字符串
-                                description: item.description || "", // 可选字段，传空字符串
-                                category: item.category || "UNCATEGORIZED", // 必需字段，默认为未分类
-                                tags: item.tags || [], // 可选字段，使用OCR结果或传空数组
-                                inventory: item.inventory || 10, // 必需字段，使用OCR结果或默认库存
-                                image_url: item.image_url || "", // 必需字段，OCR导入时传空字符串
-                                isAvailable: item.isAvailable !== undefined ? item.isAvailable : true, // 可选字段，使用OCR结果或默认为可用
-                                feature_one: item.feature_one || "", // 可选字段，使用OCR结果或传空字符串
-                                feature_two: item.feature_two || "", // 可选字段，使用OCR结果或传空字符串
-                                feature_three: item.feature_three || "" // 可选字段，使用OCR结果或传空字符串
+                                name: item.name || "", // Required field
+                                price: item.price.toString(), // Required field, convert to string
+                                description: item.description || "", // Optional field, pass empty string
+                                category: item.category || "UNCATEGORIZED", // Required field, default to uncategorized
+                                tags: item.tags || [], // Optional field, use OCR result or pass empty array
+                                inventory: item.inventory || 10, // Required field, use OCR result or default inventory
+                                image_url: item.image_url || "", // Required field, pass empty string for OCR import
+                                isAvailable: item.isAvailable !== undefined ? item.isAvailable : true, // Optional field, use OCR result or default to available
+                                feature_one: item.feature_one || "", // Optional field, use OCR result or pass empty string
+                                feature_two: item.feature_two || "", // Optional field, use OCR result or pass empty string
+                                feature_three: item.feature_three || "" // Optional field, use OCR result or pass empty string
                               }));
                               
-                              console.log('📤 Calling OCR batch import API with items data:', {
-                                merchant_id: merchantId,
+                              console.log('Calling OCR batch import API with items data (merchant_id from token):', {
                                 items: itemsForImport
                               });
                               
                               // Validate data before sending
                               const validItems = itemsForImport.filter(item => {
                                 if (!item.name || !item.name.trim()) {
-                                  console.warn('⚠️ Skipping item with empty name:', item);
+                                  console.warn('Skipping item with empty name:', item);
                                   return false;
                                 }
                                 if (!item.price || isNaN(parseFloat(item.price))) {
-                                  console.warn('⚠️ Skipping item with invalid price:', item);
+                                  console.warn('Skipping item with invalid price:', item);
                                   return false;
                                 }
                                 return true;
@@ -617,139 +604,86 @@ const MerchantOCR: React.FC = () => {
                                 throw new Error('No valid items to import');
                               }
                               
-                              console.log('📤 Validated items for import:', validItems);
+                              console.log('Validated items for import:', validItems);
                               
                               const result = await ocrAPI.importOCRItems({
-                                merchant_id: merchantId,
                                 items: validItems
                                 // Note: no preview_id needed when passing items data
                               });
                               
-                              console.log('📊 OCR batch import API response:', result);
+                              console.log('OCR batch import API response:', result);
                               successCount = validItems.length;
                             } else {
-                              // Has categories: add items individually with category matching
-                              console.log('📋 Existing menu data found, adding items individually with category matching');
+                              // Has modifications: use batch import API with items array
+                              console.log('Using batch import API with modified items');
                               
-                              for (const item of ocrResults) {
-                                let category = null;
-                                try {
-                                  console.log(`📤 Adding menu item: ${item.name}`);
-                                  console.log(`🔍 Finding category: "${item.category}"`);
-                                  console.log('📋 Available categories:', categories.map(cat => cat.name));
-                                  
-                                  // Find corresponding category ID - support case-insensitive matching
-                                  category = categories.find(cat => 
-                                    cat.name.toLowerCase() === item.category.toLowerCase()
-                                  );
-                                  
-                                  // If exact match fails, try partial matching
-                                  if (!category) {
-                                    category = categories.find(cat => 
-                                      cat.name.toLowerCase().includes(item.category.toLowerCase()) ||
-                                      item.category.toLowerCase().includes(cat.name.toLowerCase())
-                                    );
-                                  }
-                                  
-                                  // If still not found, create the OCR category directly
-                                  if (!category) {
-                                    console.log(`📝 Category "${item.category}" not found, creating it directly`);
-                                    try {
-                                      const merchantId = state.currentUser?.merchant_id;
-                                      if (!merchantId) {
-                                        throw new Error('Merchant ID not found');
-                                      }
-                                      
-                                      const categoryResponse = await menuAPI.addCategory({
-                                        merchant_id: merchantId,
-                                        category_name: item.category,
-                                        description: `Category for ${item.category} items`
-                                      });
-                                      
-                                      console.log(`✅ Created category: ${item.category}`, categoryResponse);
-                                      
-                                      // Create category object for immediate use
-                                      category = {
-                                        id: categoryResponse.id,
-                                        name: item.category,
-                                        description: `Category for ${item.category} items`
-                                      };
-                                      
-                                      console.log(`✅ Using newly created category:`, category);
-                                    } catch (categoryError) {
-                                      console.error(`❌ Failed to create category "${item.category}":`, categoryError);
-                                      errorCount++;
-                                      continue;
-                                    }
-                                  }
-                                  
-                                  // Use add_menuItem API to add single menu item
-                                  console.log(`📤 Calling addMenuItem API with:`, {
-                                    category_id: category.id,
-                                    name: item.name,
-                                    price: item.price,
-                                    description: item.description,
-                                    inventory: 10
-                                  });
-                                  
-                                  const response = await menuAPI.addMenuItem({
-                                    category_id: category.id,
-                                    name: item.name,
-                                    price: item.price,
-                                    description: item.description,
-                                    inventory: 10 // Default inventory
-                                  });
-                                  console.log(`✅ Successfully added menu item: ${item.name}`, response);
-                                  successCount++;
-                                  
-                                } catch (itemError) {
-                                  console.error(`❌ Failed to add menu item: ${item.name}`, itemError);
-                                  console.error(`❌ Error details:`, {
-                                    item: item,
-                                    category: category || 'Not found',
-                                    error: itemError
-                                  });
-                                  errorCount++;
+                              // Prepare items for import with modifications
+                              const itemsForImport = ocrResults.map(item => ({
+                                name: item.name || "", // Required field
+                                price: item.price.toString(), // Required field, convert to string
+                                description: item.description || "", // Optional field, pass empty string
+                                category: item.category || "UNCATEGORIZED", // Required field, default to uncategorized
+                                tags: item.tags || [], // Optional field, use OCR result or pass empty array
+                                inventory: item.inventory || 10, // Required field, use OCR result or default inventory
+                                image_url: item.image_url || "", // Required field, pass empty string for OCR import
+                                isAvailable: item.isAvailable !== undefined ? item.isAvailable : true, // Optional field, use OCR result or default to available
+                                feature_one: item.feature_one || "", // Optional field, use OCR result or pass empty string
+                                feature_two: item.feature_two || "", // Optional field, use OCR result or pass empty string
+                                feature_three: item.feature_three || "" // Optional field, use OCR result or pass empty string
+                              }));
+                              
+                              // Validate data before sending
+                              const validItems = itemsForImport.filter(item => {
+                                if (!item.name || !item.name.trim()) {
+                                  console.warn('Skipping item with empty name:', item);
+                                  return false;
                                 }
+                                if (!item.price || isNaN(parseFloat(item.price))) {
+                                  console.warn('Skipping item with invalid price:', item);
+                                  return false;
+                                }
+                                return true;
+                              });
+                              
+                              if (validItems.length === 0) {
+                                throw new Error('No valid items to import');
                               }
+                              
+                              // Use importOCRItems batch API instead of adding items individually
+                              const result = await ocrAPI.importOCRItems({
+                                items: validItems
+                                // Note: merchant_id obtained from token automatically
+                              });
+                              
+                              console.log('OCR batch import API response:', result);
+                              successCount = validItems.length;
                             }
                           } else {
-                            // No modifications: only pass merchant_id and preview_id, valid for 15 minutes
-                            console.log('📋 No modifications, using preview_id method for batch import (only pass merchant_id and preview_id)');
+                            // No modifications: only pass preview_id, valid for 15 minutes (merchant_id from token)
+                            console.log('No modifications, using preview_id method for batch import');
                             
                             if (!previewId) {
                               throw new Error('Missing preview_id, unable to perform batch import');
                             }
                             
-                            // Use OCR batch import API
-                            const merchantId = state.currentUser?.merchant_id;
-                            if (!merchantId) {
-                              throw new Error('Merchant ID not found. Please login again.');
-                            }
-                            
-                            // No modifications case: only pass merchant_id and preview_id, don't pass items
+                            // No modifications case: only pass preview_id, merchant_id from token
                             const result = await ocrAPI.importOCRItems({
-                              merchant_id: merchantId,
                               preview_id: previewId
-                              // Note: don't pass items, use preview_id for batch import
+                              // Note: merchant_id obtained from token automatically
                             });
                             
-                            console.log('📊 Batch import API response:', result);
+                            console.log('Batch import API response:', result);
                             successCount = ocrResults.length; // Assume all successful
                           }
                           
-                          console.log(`📊 Import completed: ${successCount} successful, ${errorCount} failed`);
+                          console.log(`Import completed: ${successCount} successful, ${errorCount} failed`);
                           
                           // Re-fetch menu data from API to ensure correct IDs
-                          console.log('🔄 Re-fetching menu data to ensure correct IDs...');
+                          console.log('Re-fetching menu data to ensure correct IDs...');
                           try {
-                            const merchantId = state.currentUser?.merchant_id;
-                            if (!merchantId) {
-                              throw new Error('Merchant ID not found. Please login again.');
-                            }
-                            
-                            const menuResponse = await menuAPI.getAllMenuItems(merchantId);
-                            console.log('📋 Re-fetched menu data:', menuResponse.menuItems);
+                            // Fetch menu items (merchant_id from token)
+                            const menuResponse = await menuAPI.getAllMenuItems();
+                            console.log('Re-fetched menu data:', menuResponse.menuItems);
                             
                             // Update global state
                             dispatch({ 
@@ -765,12 +699,12 @@ const MerchantOCR: React.FC = () => {
                                   id: item.category?.id || 1,
                                   name: item.category?.name || 'Unknown'
                                 },
-                                isAvailable: item.inventory > 0,
-                                inventory: item.inventory
+                                isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                                inventory: item.inventory || 0
                               }))
                             });
                           } catch (error) {
-                            console.error('❌ Failed to re-fetch menu data:', error);
+                            console.error('Failed to re-fetch menu data:', error);
                           }
                           
                           // Show import results
@@ -779,7 +713,7 @@ const MerchantOCR: React.FC = () => {
                           } else {
                             const errorMessage = `Failed to import any items. Please check the browser console for detailed error information.`;
                             alert(errorMessage);
-                            console.error(`❌ Import failed summary:`, {
+                            console.error(`Import failed summary:`, {
                               totalItems: ocrResults.length,
                               successCount,
                               errorCount,
@@ -821,7 +755,7 @@ const MerchantOCR: React.FC = () => {
 
           {/* Instructions */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-blue-800 mb-3">📋 How to Use OCR</h3>
+            <h3 className="text-lg font-bold text-blue-800 mb-3">How to Use OCR</h3>
             <div className="space-y-2 text-blue-700 text-sm">
               <p>1. <strong>Take a clear photo</strong> of your menu in good lighting</p>
               <p>2. <strong>Upload the image</strong> using the button above</p>
@@ -830,7 +764,7 @@ const MerchantOCR: React.FC = () => {
               <p>5. <strong>Complete import</strong> to add all items to your menu</p>
             </div>
             <div className="mt-4 pt-3 border-t border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">💡 Import Logic:</h4>
+              <h4 className="font-semibold text-blue-800 mb-2">Import Logic:</h4>
               <div className="space-y-1 text-blue-600 text-xs">
                 <p>• <strong>No modifications</strong>: Use preview_id for batch import (valid for 15 minutes)</p>
                 <p>• <strong>With modifications</strong>: Add modified item data individually</p>

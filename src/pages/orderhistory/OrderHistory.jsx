@@ -9,23 +9,18 @@ const OrderHistory = ({ userId }) => {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (userId) {
-            // 使用 getUserOrders 方法，需要传递 user_id 和 merchant_id
-            orderAPI.getUserOrders(parseInt(userId), 1) // 默认 merchant_id 为 1
-                .then((res) => {
-                    setOrders(res.orders || []);
-                })
-                .catch(() => {
-                    setError("Failed to load order data");
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-        } else {
-            setLoading(false);
-            setError("No user ID provided.");
-        }
-    }, [userId]);
+    
+        orderAPI.getUserOrders() // 
+            .then((res) => {
+                setOrders(res.orders || []);
+            })
+            .catch(() => {
+                setError("Failed to load order data");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    }, []);
 
     if (loading) return <Spinner animation="border" className="mt-3" />;
     if (error) return <Alert variant="danger" className="mt-3">{error}</Alert>;
@@ -36,8 +31,8 @@ const OrderHistory = ({ userId }) => {
                 <Card key={order.order_id} className="mb-4 shadow-sm p-3 history-card">
                     <div className="order-header">
                         <h6 className="mb-0">Order ID #{order.order_id}</h6>
-                        <Badge bg={order.status === "paid" ? "success" : "secondary"}>
-                            {order.status === "paid" ? "Paid" : "Cancelled"}
+                        <Badge bg={order.status === "paid" ? "success" : (order.status === "cancelled" ? "danger" : "secondary")}>
+                            {order.status === "paid" ? "Paid" : (order.status === "cancelled" ? "Cancelled" : "Error")}
                         </Badge>
                     </div>
                     <div className="order-meta">Order Time: {order.order_time}</div>

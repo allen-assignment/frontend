@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Store } from 'lucide-react';
 import { useApp } from '../shared/context/AppContext';
@@ -12,7 +12,20 @@ import MerchantOrderManagement from './components/MerchantOrderManagement';
 
 const MerchantApp: React.FC = () => {
     const navigate = useNavigate();
-    const { logout } = useApp();
+    const { logout, state } = useApp();
+
+    // Skip permission check, directly show Merchant Dashboard
+    useEffect(() => {
+        console.log('MerchantApp loaded, directly showing Dashboard:', {
+            isLoggedIn: state.isLoggedIn,
+            hasCurrentUser: !!state.currentUser,
+            usertype: state.currentUser?.usertype,
+            merchant_id: state.currentUser?.merchant_id,
+            timestamp: new Date().toISOString()
+        });
+    }, [state.isLoggedIn, state.currentUser]);
+
+    // Directly show Merchant Dashboard without permission check
 
     return (
         <div className="min-h-screen w-full bg-gray-50">

@@ -14,7 +14,8 @@ const MerchantAddMenu: React.FC = () => {
         price: '',
         category_id: '',
         ingredients: '',
-        inventory: ''
+        inventory: '',
+        isAvailable: true
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -40,7 +41,7 @@ const MerchantAddMenu: React.FC = () => {
                 }
                 
                 // Otherwise fetch category data from API
-                const response = await menuAPI.getAllMenuItems(1); // Default merchant ID is 1
+                const response = await menuAPI.getAllMenuItems();
                 
                 // Extract unique categories from menu data
                 const categoryMap = new Map();
@@ -75,10 +76,11 @@ const MerchantAddMenu: React.FC = () => {
     }, [state.categories, formData.category_id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked : value
         }));
     };
 
@@ -105,6 +107,14 @@ const MerchantAddMenu: React.FC = () => {
                 return;
             }
 
+            // optional
+            if (!selectedFile) {
+                const confirmed = window.confirm('No image selected. Do you want to continue without an image?');
+                if (!confirmed) {
+                    return;
+                }
+            }
+
             // Call API to add menu item
             const response = await menuAPI.addMenuItem({
                 category_id: parseInt(formData.category_id),
@@ -112,22 +122,24 @@ const MerchantAddMenu: React.FC = () => {
                 description: formData.description.trim(),
                 price: parseFloat(formData.price),
                 inventory: parseInt(formData.inventory),
-                file: selectedFile || undefined,
+                isAvailable: formData.isAvailable,  // required
+                file: selectedFile || undefined,  // optional
             });
 
             
+            // response: { ok: true, message: "...", item_id: number, image_url: string }
             const menuItem = {
-                id: response.id.toString(), 
+                id: response.item_id.toString(), 
                 name: formData.name.trim(),
                 description: formData.description.trim(),
                 price: parseFloat(formData.price),
                 category_id: formData.category_id,
-                image_url: response.image_url || previewUrl || '',
+                image_url: response.image_url || '',
                 ingredients: formData.ingredients.trim() 
                     ? formData.ingredients.split(',').map(ing => ing.trim()).filter(Boolean)
                     : [],
                 inventory: parseInt(formData.inventory),
-                isAvailable: true
+                isAvailable: formData.isAvailable
             };
 
             dispatch({ 
@@ -268,6 +280,29 @@ const MerchantAddMenu: React.FC = () => {
                                     )}
                                 </select>
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800 mb-2">
+                                    Availability Status *
+                                </label>
+                                <div className="flex items-center space-x-3">
+                                    <label className="inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="isAvailable"
+                                            checked={formData.isAvailable}
+                                            onChange={handleChange}
+                                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm text-gray-700">
+                                            {formData.isAvailable ? 'Available' : 'Unavailable'}
+                                        </span>
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Check this box if the item is currently available for ordering
+                                </p>
+                            </div>
                         
                             
                             <div>
@@ -276,7 +311,7 @@ const MerchantAddMenu: React.FC = () => {
                                 </label>
                                 <input
                                     type="file"
-                                    accept="image/jpeg,image/jpg,image/png"
+                                    accept="image/*"
                                     onChange={handleFileChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                 />

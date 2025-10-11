@@ -38,7 +38,7 @@ function App() {
           </CustomerCartProvider>
         } />
         
-        {/* Merchant App */}
+        {/* Merchant App - All merchant routes except login */}
         <Route path="/merchant/*" element={<MerchantApp />} />
         
         {/* Default */}

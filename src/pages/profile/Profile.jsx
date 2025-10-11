@@ -15,27 +15,21 @@ const ProfileDashboard = ({ userId }) => {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        console.log('Profile useEffect - userId:', userId, 'type:', typeof userId);
-        if (userId && userId !== null && userId !== '') {
-            const numericUserId = typeof userId === 'string' ? parseInt(userId) : userId;
-            userAPI.getUserById(numericUserId)
-                .then((res) => {
-                    console.log('Profile - user data loaded:', res);
-                    setUserInfo(res);
-                })
-                .catch((error) => {
-                    console.error('Profile - failed to load user info:', error);
-                    setError("Failed to load user info.");
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-        } else {
-            console.log('Profile - no userId provided');
-            setLoading(false);
-            setError("No user ID provided.");
-        }
-    }, [userId]);
+        console.log('Profile useEffect - loading user info from token');
+        // Get user info from token (no need to pass userId)
+        userAPI.getUserById()
+            .then((res) => {
+                console.log('Profile - user data loaded:', res);
+                setUserInfo(res);
+            })
+            .catch((error) => {
+                console.error('Profile - failed to load user info:', error);
+                setError("Failed to load user info.");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    }, []);
 
     if (loading) return (
         <div className="min-h-screen bg-white">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Star, Plus, Minus } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
 import { useCart } from '../context/CustomerCartContext';
@@ -12,17 +12,13 @@ const CustomerPopularItems: React.FC = () => {
     // Prioritize recommended items, if no recommended items then use first 5 available menu items as popular items
     const popularItems = useMemo(() => {
         if (state.recommendedItems.length > 0) {
-            // Filter out unavailable recommended items
-            const availableRecommended = state.recommendedItems
-                .filter(item => item.isAvailable !== false)
-                .slice(0, 5);
-            console.log('🎯 Display available recommended items:', availableRecommended);
-            return availableRecommended;
+            
+            const recommended = state.recommendedItems.slice(0, 5);
+            console.log('Display recommended items:', recommended);
+            return recommended;
         }
-        const regularItems = state.menuItems
-            .filter(item => item.isAvailable !== false)
-            .slice(0, 5);
-        console.log('📋 Display regular popular items:', regularItems);
+        
+        const regularItems = state.menuItems.slice(0, 5);
         return regularItems;
     }, [state.recommendedItems, state.menuItems]);
         
@@ -54,7 +50,6 @@ const CustomerPopularItems: React.FC = () => {
         return getItemQuantity(itemId) > 0;
     };
 
-    // 检查是否达到库存限制
     const isInventoryReached = (item: any) => {
         const currentQuantity = getItemQuantity(item.id);
         const inventory = item.inventory || 10; // Default inventory is 10
@@ -90,7 +85,14 @@ const CustomerPopularItems: React.FC = () => {
         addToCart(item, 1);
     };
 
+    console.log('PopularItems render check:', {
+        popularItemsLength: popularItems.length,
+        shouldRender: popularItems.length > 0,
+        popularItems: popularItems
+    });
+    
     if (popularItems.length === 0) {
+        console.log('PopularItems not rendered: no items');
         return null;
     }
 

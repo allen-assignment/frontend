@@ -12,6 +12,24 @@ const api = axios.create({
 });
 
 
+// Request interceptor to add JWT token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('jwt_token');
+   
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('Authorization header added');
+    } else {
+      console.warn('No token found, skipping Authorization header');
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
@@ -19,6 +37,39 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    console.error('API Error URL:', error.config?.url);
+    
+    // Handle token expiration
+    if (error.response?.status === 401) {
+      const requestUrl = error.config?.url || '';
+      
+      console.log('401 error:', {
+        requestUrl,
+        currentPath: window.location.pathname,
+        errorMessage: error.response?.data || error.message
+      });
+      
+      // If it's a login or register API 401, don't auto redirect (let page handle error)
+      if (requestUrl.includes('/user/login') || requestUrl.includes('/user/register')) {
+        console.log('Login/register failed, let page handle error');
+        return Promise.reject(error);
+      }
+      
+      // Token expired or invalid, remove it and redirect to login
+      console.log('Token expired or invalid, redirecting to login');
+      localStorage.removeItem('jwt_token');
+      
+      // Redirect to appropriate login page based on current path
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/merchant')) {
+        console.log('Redirecting to merchant login page');
+        window.location.href = '/merchant/login';
+      } else {
+        console.log('Redirecting to customer login page');
+        window.location.href = '/login';
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -45,6 +96,7 @@ export interface MenuItem {
   image_url: string;
   price: string;
   inventory: number;
+  isAvailable?: boolean;
   category: {
     id: number;
     name: string;
@@ -95,6 +147,30 @@ export interface OCRResponse {
   error?: string;
 }
 
+// JWT Token management
+export const tokenManager = {
+  // Store JWT token in localStorage
+  setToken: (token: string) => {
+    localStorage.setItem('jwt_token', token);
+  },
+
+  // Get JWT token from localStorage
+  getToken: () => {
+    return localStorage.getItem('jwt_token');
+  },
+
+  // Remove JWT token from localStorage
+  removeToken: () => {
+    localStorage.removeItem('jwt_token');
+  },
+
+  // Decode JWT token to get user info
+  decodeToken: async (token: string) => {
+    const response = await api.post('/user/decode', { token });
+    return response.data;
+  }
+};
+
 // User related API
 export const userAPI = {
   // User registration
@@ -116,13 +192,20 @@ export const userAPI = {
     username: string;
     password: string;
   }) => {
-    const response = await api.post('/user/login', credentials);
-    return response.data;
+    console.log('userAPI.login starting request:', credentials);
+    try {
+      const response = await api.post('/user/login', credentials);
+      console.log('userAPI.login request successful:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('userAPI.login request failed:', error);
+      throw error;
+    }
   },
 
-  // Get user info by ID
-  getUserById: async (userId: number) => {
-    const response = await api.get(`/user/getUserById?user_id=${userId}`);
+  // Get user info by ID (from token)
+  getUserById: async () => {
+    const response = await api.get(`/user/getUserById`);
     return response.data;
   },
 
@@ -141,7 +224,6 @@ export const userAPI = {
 export const menuAPI = {
   // Add menu category
   addCategory: async (categoryData: {
-    merchant_id: number;
     category_name: string;
     description?: string;
   }) => {
@@ -149,26 +231,42 @@ export const menuAPI = {
     return response.data;
   },
 
-  // Add menu item (supports file upload)
+  // Add menu item (supports file upload via multipart/form-data)
   addMenuItem: async (itemData: {
     category_id: number;
     name: string;
     price: number;
     inventory: number;
+    isAvailable: boolean;  // Required field
     description?: string;
-    file?: File;
+    file?: File;  // File is now optional
   }) => {
+    // Create FormData object
     const formData = new FormData();
-    formData.append('category_id', String(itemData.category_id));
-    formData.append('name', String(itemData.name));
-    formData.append('price', String(itemData.price));
-    formData.append('inventory', String(itemData.inventory));
-    if (itemData.description != null) formData.append('description', String(itemData.description));
-    if (itemData.file) formData.append('file', itemData.file);
-
+    formData.append('category_id', itemData.category_id.toString());
+    formData.append('name', itemData.name);
+    formData.append('price', itemData.price.toString());
+    formData.append('inventory', itemData.inventory.toString());
+    
+    if (itemData.description) {
+      formData.append('description', itemData.description);
+    }
+    
+    // isAvailable: '1' = true, '0' = false (required field)
+    formData.append('isAvailable', itemData.isAvailable ? '1' : '0');
+    
+    // Add file (optional)
+    if (itemData.file) {
+      formData.append('file', itemData.file);
+    }
+    
+    // Send request using multipart/form-data
     const response = await api.post('/menu/item/add/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
+    
     return response.data;
   },
 
@@ -210,9 +308,12 @@ export const menuAPI = {
     return response.data;
   },
 
-  // Get all menu items
-  getAllMenuItems: async (merchantId: number): Promise<{ menuItems: MenuItem[] }> => {
-    const response = await api.get(`/menu/items/?merchant=${merchantId}`);
+  // Get all menu items (merchant_id from token for merchants, or can pass merchantId for customers)
+  getAllMenuItems: async (merchantId?: number): Promise<{ menuItems: MenuItem[] }> => {
+    // If merchantId is provided, use it (for customer viewing specific merchant's menu)
+    // If not provided, backend will get merchant_id from token (for merchant users)
+    const url = merchantId ? `/menu/items/?merchant_id=${merchantId}` : '/menu/items/';
+    const response = await api.get(url);
     return response.data;
   },
 };
@@ -221,8 +322,6 @@ export const menuAPI = {
 export const orderAPI = {
   // Create order
   createOrder: async (orderData: {
-    merchant_id: number;
-    user_id: number;
     table_number: string;
     items: OrderItem[];
   }) => {
@@ -230,21 +329,28 @@ export const orderAPI = {
     return response.data;
   },
 
-  // Get merchant order list
-  getOrders: async (merchant_id: number): Promise<{ orders: Order[] }> => {
-    const response = await api.get(`/order/getOrders/?merchant_id=${merchant_id}`);
+  // Get orders (user_id or merchant_id from token)
+  // For merchant: returns all orders for their merchant_id
+  // For customer: returns all orders for their user_id
+  getOrders: async (): Promise<{ orders: Order[] }> => {
+    const response = await api.get('/order/getOrders/');
     return response.data;
   },
 
-  // Get user order history
-  getUserOrders: async (user_id: number, merchant_id: number): Promise<{ orders: Order[] }> => {
-    const response = await api.get(`/order/getOrders/?user_id=${user_id}&merchant_id=${merchant_id}`);
+  // Alias for backward compatibility
+  getUserOrders: async (): Promise<{ orders: Order[] }> => {
+    const response = await api.get('/order/getOrders/');
+    return response.data;
+  },
+
+  // Get single order by order_id
+  getOrderById: async (orderId: number): Promise<{ order: Order }> => {
+    const response = await api.get(`/order/getOrders/?order_id=${orderId}`);
     return response.data;
   },
 
   // Update order status (cancel or pay)
   updateOrderStatus: async (orderData: {
-    merchant_id: number;
     order_id: number;
     status?: number;
   }) => {
@@ -253,10 +359,9 @@ export const orderAPI = {
   },
 
   // Cancel order (maintain backward compatibility)
-  cancelOrder: async (orderId: number, merchantId: number) => {
+  cancelOrder: async (orderId: number) => {
     const response = await api.post('/order/statuschanged/', { 
       order_id: orderId,
-      merchant_id: merchantId,
       status: 1
     });
     return response.data;
@@ -278,10 +383,8 @@ export const ocrAPI = {
     return response.data;
   },
 
-
   // Import OCR recognized menu items to database
   importOCRItems: async (importData: {
-    merchant_id: number;
     preview_id?: string;
     items?: OCRMenuItem[];
   }) => {

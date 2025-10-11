@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { CustomerCartProvider } from './context/CustomerCartContext';
 import { useApp } from '../shared/context/AppContext';
 import CustomerHeader from './components/CustomerHeader';
@@ -9,60 +9,65 @@ import CustomerWelcomeModal from './components/CustomerWelcomeModal';
 import CustomerPopularItems from './components/CustomerPopularItems';
 import Profile from '../pages/profile/Profile';
 import PersonalInfo from '../pages/userInfo/PersonalInfo';
-import OrderHistory from '../pages/orderhistory/OrderHistory';
 import EditField from '../edit/EditField';
 
 const CustomerAppContent: React.FC = () => {
     const { setCurrentTable, state } = useApp();
-    // Initialize by checking localStorage state
+    const location = useLocation();
+    
+    // Get merchant ID and table number from URL parameters
+    const urlParams = new URLSearchParams(location.search);
+    const merchantId = urlParams.get('merchant_id');
+    const tableNumber = urlParams.get('table');
+    
+    // Initialize: always show Welcome Modal on first visit, hide menu
+    // Menu will only show after user clicks "Start Ordering"
     const [showWelcomeModal, setShowWelcomeModal] = useState(() => {
         const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-        return !hasSeenWelcome;
+        const hasToken = localStorage.getItem('jwt_token');
+        // If has token and has seen welcome page, don't show Welcome Modal
+        if (hasToken && hasSeenWelcome) {
+            return false;
+        }
+        // In other cases, show welcome page
+        return true;
     });
     const [showMenu, setShowMenu] = useState(() => {
         const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-        return !!hasSeenWelcome;
+        const hasToken = localStorage.getItem('jwt_token');
+        // Only show menu if has token and has seen welcome page
+        return !!(hasToken && hasSeenWelcome);
     });
     // Use login state from AppContext
     const isLogin = state.isLoggedIn;
 
-    // Generate random table number for demo
+    // Set table number: prioritize URL parameter, otherwise generate random table number
     useEffect(() => {
-        if (!state.currentTable) {
+        if (tableNumber) {
+            setCurrentTable(tableNumber);
+        } else if (!state.currentTable) {
             const randomTable = Math.floor(Math.random() * 20) + 1;
             setCurrentTable(randomTable.toString());
         }
-    }, [setCurrentTable, state.currentTable]);
+    }, [setCurrentTable, state.currentTable, tableNumber]);
 
     // Listen for login state changes, reset welcome page when user logs out
     useEffect(() => {
-        console.log('🔍 登录状态变化:', { isLogin, showWelcomeModal, showMenu });
+        console.log('Login state change:', { isLogin, showWelcomeModal, showMenu });
         
         // If user logs out, always show welcome page
         if (!isLogin) {
-            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-            console.log('👤 用户已登出，检查欢迎页面状态:', { hasSeenWelcome });
-            
-            // After logout, if haven't seen welcome page, show welcome page
-            if (!hasSeenWelcome) {
-                console.log('📱 显示欢迎页面，隐藏导航栏');
-                setShowWelcomeModal(true);
-                setShowMenu(false);
-            } else {
-                // If already seen welcome page, also show welcome page (should re-display after Reset)
-                console.log('📱 Reset后重新显示欢迎页面');
-                setShowWelcomeModal(true);
-                setShowMenu(false);
-            }
+            setShowWelcomeModal(true);
+            setShowMenu(false);
         } else {
             // User is logged in, decide display content based on hasSeenWelcome
             const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
             if (hasSeenWelcome) {
-                console.log('📱 用户已登录且看过欢迎页面，显示菜单');
+                console.log('User logged in and has seen welcome page, show menu');
                 setShowWelcomeModal(false);
                 setShowMenu(true);
             } else {
-                console.log('📱 用户已登录但未看过欢迎页面，显示欢迎页面');
+                console.log('User logged in but has not seen welcome page, show welcome page');
                 setShowWelcomeModal(true);
                 setShowMenu(false);
             }
@@ -77,7 +82,7 @@ const CustomerAppContent: React.FC = () => {
     };
 
     // Debug info
-    console.log('🎨 渲染状态:', { showWelcomeModal, showMenu, shouldShowHeader: showMenu && !showWelcomeModal });
+    console.log('Render state:', { showWelcomeModal, showMenu, shouldShowHeader: showMenu && !showWelcomeModal });
 
     return (
         <div className="min-h-screen bg-white">

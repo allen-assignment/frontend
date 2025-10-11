@@ -11,7 +11,9 @@ const PersonalInfo = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { state: appState } = useApp();
-    const userInfo = location.state?.userInfo || appState.currentUser;
+    const userInfo = appState.currentUser || location.state?.userInfo;
+    
+    // Debug info removed
 
     if (!userInfo) {
         return (
@@ -34,7 +36,7 @@ const PersonalInfo = () => {
             <main className="pt-16">
                 <div className="py-6">
                     <div className="dashboard-container">
-                        {/* 用户头像和信息 */}
+                      
                         <div className="avatar-wrapper">
                             <Image
                                 src={`https://i.pravatar.cc/150?u=a042581f4e29026704d${userInfo.id || userInfo.username}`}
@@ -49,7 +51,7 @@ const PersonalInfo = () => {
                             </div>
                         </div>
 
-                        {/* 个人信息卡片 */}
+                       
                         <Card
                             className="menu-card"
                             onClick={() => goEdit("username")}

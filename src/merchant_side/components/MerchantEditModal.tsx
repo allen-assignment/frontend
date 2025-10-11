@@ -68,12 +68,15 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('File input changed:', e.target.files);
         const file = e.target.files && e.target.files[0];
         if (file) {
+            console.log('File selected:', file.name, file.type, file.size);
             setSelectedFile(file);
             const url = URL.createObjectURL(file);
             setPreviewUrl(url);
         } else {
+            console.log('No file selected');
             setSelectedFile(null);
             setPreviewUrl(null);
         }
@@ -165,7 +168,9 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
                             type="file"
                             accept="image/*"
                             onChange={handleFileChange}
-                            className="w-full"
+                            onClick={() => console.log('File input clicked')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            style={{ cursor: 'pointer' }}
                         />
                         <p className="text-xs text-gray-500 mt-1">Image will be previewed after selection and uploaded when saved.</p>
                     </div>

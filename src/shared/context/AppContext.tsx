@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import { tokenManager } from '../../services/api';
 
 // Shared data type definitions
 export interface MenuItem {
@@ -12,6 +13,7 @@ export interface MenuItem {
     id: number;
     name: string;
   };
+  merchant_id?: number;  // Merchant ID - used for identifying merchant when placing orders
   isAvailable?: boolean;
   inventory?: number;
   feature_one?: string;
@@ -50,7 +52,7 @@ export interface Order {
     menuItem: MenuItem;
     quantity: number;
   }[];
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'paid' | 'cancelled' | number;
+  status: number; // 0: Paid, 1: Cancelled, other numbers: Error
   total: number;
   createdAt: string;
 }
@@ -71,10 +73,8 @@ interface AppState {
   isConnected: boolean;
   currentUser: User | null;
   isLoggedIn: boolean;
-  // 推荐商品
   recommendedItems: MenuItem[];
   isRecommendationsLoaded: boolean;
-  // 数据加载状态
   isMenuDataLoaded: boolean;
   isCategoriesLoaded: boolean;
 }
@@ -129,10 +129,10 @@ const initialState: AppState = {
   isConnected: true,
   currentUser: null,
   isLoggedIn: false,
-  // 推荐商品
+  // Recommended items
   recommendedItems: [],
   isRecommendationsLoaded: false,
-  // 数据加载状态
+  // Data loading status
   isMenuDataLoaded: false,
   isCategoriesLoaded: false
 };
@@ -188,19 +188,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state, 
         currentUser: action.payload, 
         isLoggedIn: true,
-        menuItems: [], // Clear previous menu data
-        isMenuDataLoaded: false, // Reset menu data loading status
+        // Keep menu data, only clear recommendation data
         recommendedItems: [], // Clear recommendation data
         isRecommendationsLoaded: false // Reset recommendation data loading status
       };
     case 'LOGOUT':
-      console.log('🔄 LOGOUT reducer called, current state:', state);
+      console.log('LOGOUT reducer called, current state:', state);
       const newState = { 
         ...state, 
         currentUser: null, 
         isLoggedIn: false 
       };
-      console.log('✅ LOGOUT reducer completed, new state:', newState);
+      console.log('LOGOUT reducer completed, new state:', newState);
       return newState;
     case 'SET_RECOMMENDED_ITEMS':
       return { ...state, recommendedItems: action.payload };
@@ -221,13 +220,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
-  // 便捷方法
+  // Convenience methods
   addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
   updateMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (id: string) => void;
   setCategories: (categories: Category[]) => void;
   addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
   setCurrentTable: (tableNumber: string) => void;
   login: (user: User) => void;
   logout: () => void;
@@ -238,11 +237,11 @@ interface AppContextType {
 // Create context
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Provider组件
+// Provider component
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // 便捷方法
+  // Convenience methods
   const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
     const newItem: MenuItem = {
       ...item,
@@ -268,15 +267,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: Date.now().toString(),
       tableNumber,
       items,
-      status: 'pending',
+      status: 0, // 0: Paid (default status for new order)
       total: items.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0),
       createdAt: new Date().toISOString()
     };
     dispatch({ type: 'ADD_ORDER', payload: newOrder });
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { orderId, status } });
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      // Call API to update order status
+      const { orderAPI } = await import('../../services/api');
+      await orderAPI.updateOrderStatus({
+        order_id: parseInt(orderId),
+        status: status // 0: Paid, 1: Cancelled
+      });
+      
+      // Update local state
+      dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { orderId, status } });
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      throw error;
+    }
   };
 
   const setCurrentTable = (tableNumber: string) => {
@@ -289,9 +301,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logout = () => {
-    console.log('🚪 Logout function called');
+    console.log('Logout function called');
+    // Use tokenManager to remove JWT token
+    tokenManager.removeToken();
+    console.log('JWT token removed from localStorage');
     dispatch({ type: 'LOGOUT' });
-    console.log('✅ Logout dispatch executed');
+    console.log('Logout dispatch executed');
   };
 
   const setRecommendedItems = (items: MenuItem[]) => {
@@ -304,7 +319,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       // Check if menu data already exists, if not load first
       if (!state.isMenuDataLoaded || state.menuItems.length === 0) {
-        console.log('📋 Menu data not loaded, loading menu data first...');
+        console.log('Menu data not loaded, loading menu data first...');
         const { menuAPI } = await import('../../services/api');
         const menuResponse = await menuAPI.getAllMenuItems(parseInt(restaurantId));
         // Convert API data format to match AppContext MenuItem interface
@@ -316,6 +331,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           image_url: item.image_url,
           category_id: item.category.id.toString(),
           category: item.category,
+          merchant_id: item.merchant_id,  // Keep merchant_id
           isAvailable: true,
           inventory: item.inventory,
           feature_one: item.feature_one,
@@ -328,7 +344,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Import userAPI
       const { userAPI } = await import('../../services/api');
       
-      console.log('🔍 Vector Search API call parameters:', {
+      console.log('Vector Search API call parameters:', {
         text: tastePreferences,
         restaurant_id: restaurantId,
         top_k: topK
@@ -340,8 +356,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         top_k: topK
       });
       
-      console.log('📊 Vector API raw response data:', response);
-      console.log('📋 Search results details:', response.value);
+      console.log('Vector API raw response data:', response);
+      console.log('Search results details:', response.value);
       
       // Directly find matching items from existing menu data
       const recommendedItems: MenuItem[] = response.value?.map((item: any) => {
@@ -351,7 +367,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         );
         
         if (matchedMenuItem) {
-          console.log(`✅ Directly matched menu item: "${item.name}" (ID: ${item.id})`);
+          console.log(`Directly matched menu item: "${item.name}" (ID: ${item.id})`);
           return {
             ...matchedMenuItem,
             searchScore: item['@search.score'],
@@ -367,30 +383,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         );
         
         if (nameMatchedItem) {
-          console.log(`✅ Matched menu item by name: "${item.name}" -> "${nameMatchedItem.name}"`);
+          console.log(`Matched menu item by name: "${item.name}" -> "${nameMatchedItem.name}"`);
           return {
             ...nameMatchedItem,
             searchScore: item['@search.score'],
             tags: item.text?.match(/tags:\s*([^|]+)/i)?.[1]?.trim() || '',
-            restaurantId: item.restaurant_id
+            restaurantId: item.restaurant_id,
+            isAvailable: true // Ensure recommended items are available
           };
         }
         
         // If no match found, log debug info
-        console.log(`❌ No menu item matched: "${item.name}" (ID: ${item.id})`);
-        console.log(`📋 Current menu items count: ${state.menuItems.length}`);
-        console.log(`📋 Menu item ID list:`, state.menuItems.map(m => m.id));
+        console.log(`No menu item matched: "${item.name}" (ID: ${item.id})`);
+        console.log(`Current menu items count: ${state.menuItems.length}`);
+        console.log(`Menu item ID list:`, state.menuItems.map(m => m.id));
         
         return null; // Return null, will be filtered out later
       }).filter(Boolean) || []; // Filter out null values
       
-      console.log('✅ Final recommended items list:', recommendedItems);
+      console.log('Final recommended items list:', recommendedItems);
       
       dispatch({ type: 'SET_RECOMMENDED_ITEMS', payload: recommendedItems });
       dispatch({ type: 'SET_RECOMMENDATIONS_LOADED', payload: true });
       
     } catch (error) {
-      console.error('❌ Failed to load recommendations:', error);
+      console.error('Failed to load recommendations:', error);
       dispatch({ type: 'SET_RECOMMENDATIONS_LOADED', payload: true });
     }
   };

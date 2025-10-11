@@ -58,19 +58,6 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
                                     • Table {appState.currentTable}
                                 </span>
                             )}
-                            {/* Development environment reset button */}
-                            {process.env.NODE_ENV === 'development' && (
-                                <button
-                                    className="text-xs text-gray-400 hover:text-gray-600 ml-2"
-                                    onClick={() => {
-                                        localStorage.removeItem('hasSeenWelcome');
-                                        window.location.reload();
-                                    }}
-                                    title="Reset Welcome Modal (Dev only)"
-                                >
-                                    🔄
-                                </button>
-                            )}
                         </>
                     )}
                 </div>
@@ -79,22 +66,21 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
                     <div className="flex items-center gap-4">
                         {/* Connection status indicator */}
                         <div className={`w-2 h-2 rounded-full ${appState.isConnected ? 'bg-green-500' : 'bg-red-500'}`} 
-                             title={appState.isConnected ? 'Connected' : 'Disconnected'} />
+                            title={appState.isConnected ? 'Connected' : 'Disconnected'} />
                         
                         {/* Reset Button */}
                         <button
                             className="flex items-center gap-2 px-3 py-1 text-sm text-orange-600 hover:text-orange-800 transition-colors border border-orange-200 rounded-md hover:bg-orange-50"
                             onClick={() => {
-                                console.log('🔄 Reset button clicked');
                                 // Clear user login state
                                 logout();
-                                console.log('✅ User login state cleared');
+                                console.log('User login state cleared');
                                 // Reset welcome page state
                                 localStorage.removeItem('hasSeenWelcome');
-                                console.log('✅ Welcome page state reset');
-                                // Force page refresh to ensure state reset
-                                window.location.reload();
-                                console.log('✅ Page refreshed');
+                                console.log('Welcome page state reset');
+                                // Navigate to root path (localhost:3000)
+                                window.location.href = '/';
+                                console.log('Navigated to root path');
                             }}
                             title="Reset to Welcome Page"
                         >

@@ -7,43 +7,47 @@ import { menuAPI, orderAPI } from '../../services/api';
 const MerchantDashboard: React.FC = () => {
     const { state, dispatch } = useApp();
     const navigate = useNavigate();
-    // 初始化loading状态：如果数据已加载则不需要loading
+    // Initialize loading state: no loading needed if data is already loaded
     const [loading, setLoading] = useState(!(state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0));
     const [error, setError] = useState<string | null>(null);
     const [orders, setOrders] = useState<any[]>([]);
 
-    // 监听数据状态变化，更新loading状态
+    // Listen for data state changes, update loading state
     useEffect(() => {
         if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0) {
             setLoading(false);
         }
     }, [state.isMenuDataLoaded, state.menuItems]);
 
-    // 从 API 获取菜单数据
+    // Fetch menu data from API
     useEffect(() => {
         const fetchMenuData = async () => {
             try {
                 setError(null);
                 
-                // 检查是否已有数据且商户ID匹配
+                // Check if token exists
+                const token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    console.log('Token not found, waiting for login completion...');
+                    return;
+                }
+                
+                // Check if data already exists and merchant ID matches
                 const merchantId = state.currentUser?.merchant_id;
                 if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0 && merchantId) {
-                    console.log('📋 使用缓存的菜单数据');
+                    console.log('Using cached menu data');
                     setLoading(false);
                     return;
                 }
                 
-                console.log('🔄 从API获取菜单数据...');
+                console.log('Fetching menu data from API...', { hasToken: !!token });
                 setLoading(true);
-
-                if (!merchantId) {
-                    throw new Error('Merchant ID not found. Please login again.');
-                }
                 
-                const response = await menuAPI.getAllMenuItems(merchantId);
-                console.log('从API获取的菜单数据:', response.menuItems);
+                // Get menu items (merchant_id from token)
+                const response = await menuAPI.getAllMenuItems();
+                console.log('Menu data from API:', response.menuItems);
                 
-                // 将API数据转换为AppContext格式
+                // Convert API data to AppContext format
                 const convertedItems = response.menuItems.map((item: any) => ({
                     id: item.id.toString(),
                     name: item.name,
@@ -51,17 +55,27 @@ const MerchantDashboard: React.FC = () => {
                     price: parseFloat(item.price.toString()),
                     image_url: item.image_url,
                     category_id: item.category?.id?.toString() || '1',
-                    isAvailable: item.inventory > 0,
-                    inventory: item.inventory
+                    category: item.category ? {
+                        id: item.category.id,
+                        name: item.category.name
+                    } : undefined,
+                    isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                    inventory: item.inventory || 0
                 }));
                 
-                // 更新全局状态
+                // Update global state
                 dispatch({ 
                     type: 'SET_MENU_ITEMS', 
                     payload: convertedItems
                 });
+                
+                // Mark menu data as loaded
+                dispatch({
+                    type: 'SET_MENU_DATA_LOADED',
+                    payload: true
+                });
             } catch (err) {
-                console.error('获取菜单失败:', err);
+                console.error('Failed to fetch menu:', err);
                 setError('Failed to load menu items');
             } finally {
                 setLoading(false);
@@ -69,21 +83,24 @@ const MerchantDashboard: React.FC = () => {
         };
 
         fetchMenuData();
-    }, [dispatch, state.currentUser?.merchant_id]);
+    }, [dispatch, state.currentUser?.merchant_id, state.isLoggedIn]);
 
-    // 获取订单数据
+    // Fetch order data
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const merchantId = state.currentUser?.merchant_id;
-                if (!merchantId) {
+                // Check if token exists (backend will automatically extract merchant_id from token)
+                const token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    console.log('Token not found, waiting for login completion...');
                     return;
                 }
                 
-                const response = await orderAPI.getOrders(merchantId);
-                console.log('📋 获取的订单数据:', response.orders);
+                console.log('Fetching order data from API...', { hasToken: !!token });
+                const response = await orderAPI.getOrders();
+                console.log('Fetched order data:', response.orders);
                 
-                // 转换API数据格式为AppContext格式
+                // Convert API data format to AppContext format
                 const convertedOrders = response.orders.map((order: any) => ({
                     id: order.order_id.toString(),
                     tableNumber: order.table_number,
@@ -106,27 +123,37 @@ const MerchantDashboard: React.FC = () => {
                 }));
                 
                 setOrders(convertedOrders);
+                console.log('Set local order state:', convertedOrders.length, 'orders');
                 
-                // 将转换后的订单数据存储到全局状态
+                // Store converted order data in global state
                 dispatch({ 
                     type: 'SET_ORDERS', 
                     payload: convertedOrders
                 });
+                console.log('Dispatched SET_ORDERS to global state');
             } catch (error) {
-                console.error('获取订单失败:', error);
+                console.error('Failed to fetch orders:', error);
             }
         };
 
         fetchOrders();
-    }, [state.currentUser?.merchant_id]); 
+    }, [dispatch, state.isLoggedIn]); 
 
-    // 计算统计数据
+    // Calculate statistics
     const totalMenuItems = state.menuItems.length;
     const availableItems = state.menuItems.filter(item => item.isAvailable !== false).length;
     const totalMembers = state.members.length;
-    const totalOrders = orders.length;
+    const totalOrders = state.orders?.length || orders.length;
+    
+    // Debug logs
+    console.log('Dashboard statistics:', {
+        'state.orders': state.orders?.length || 0,
+        'local orders': orders.length,
+        'totalOrders': totalOrders,
+        'state object': state.orders
+    });
 
-    // 加载状态
+    // Loading state
     if (loading) {
         return (
             <div className="space-y-6">
@@ -140,7 +167,7 @@ const MerchantDashboard: React.FC = () => {
         );
     }
 
-    // 错误状态
+    // Error state
     if (error) {
         return (
             <div className="space-y-6">
@@ -157,51 +184,51 @@ const MerchantDashboard: React.FC = () => {
         );
     }
 
-    // 无数据状态 - 新注册的商家用户
+    // No data state - newly registered merchant user
     if (!loading && totalMenuItems === 0) {
         return (
             <div className="space-y-6">
-                {/* 空状态背景 */}
+                {/* Empty state background */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg border border-blue-200 p-12 text-center">
                     <div className="max-w-md mx-auto">
-                        {/* 图标 */}
+                        {/* Icon */}
                         <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Store className="w-10 h-10 text-blue-600" />
                         </div>
                         
-                        {/* 标题和描述 */}
+                        {/* Title and description */}
                         <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to Your Dashboard!</h3>
                         <p className="text-gray-600 mb-6 leading-relaxed">
                             You haven't added any menu items yet. Start building your menu by adding your first dish or using OCR to scan your existing menu.
                         </p>
                         
-                        {/* 操作按钮 */}
+                        {/* Action buttons */}
                         <div className="space-y-3">
                             <button 
                                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                                 onClick={() => navigate('/merchant/menu')}
                             >
-                                📝 Add Your First Menu Item
+                                Add Your First Menu Item
                             </button>
                             
                             <button 
                                 className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium"
                                 onClick={() => navigate('/merchant/ocr')}
                             >
-                                📷 Scan Menu with OCR
+                                Scan Menu with OCR
                             </button>
                         </div>
                         
-                        {/* 提示信息 */}
+                        {/* Tips */}
                         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                             <p className="text-sm text-blue-700">
-                                💡 <strong>Tip:</strong> Use OCR to quickly scan your physical menu and automatically extract menu items!
+                                <strong>Tip:</strong> Use OCR to quickly scan your physical menu and automatically extract menu items!
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* 快速统计卡片 - 显示为0 */}
+                {/* Quick statistics cards - show as 0 */}
                 <div className="grid grid-cols-2 gap-4">
                     {/* <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                         <div className="flex items-center gap-3">
