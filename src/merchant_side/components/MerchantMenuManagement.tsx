@@ -7,7 +7,7 @@ import MerchantEditModal from './MerchantEditModal';
 import MenuItemImage from '../../shared/components/MenuItemImage';
 
 const MerchantMenuManagement: React.FC = () => {
-    const { state, dispatch, updateMenuItem, deleteMenuItem, setCategories } = useApp();
+    const { state, dispatch, updateMenuItem, deleteMenuItem, setCategories, loadCategories } = useApp();
     const navigate = useNavigate();
     const [editingItem, setEditingItem] = useState<any>(null);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -22,6 +22,30 @@ const MerchantMenuManagement: React.FC = () => {
         }
     }, [state.isMenuDataLoaded, state.menuItems]);
     
+    // Debug: Log categories state
+    useEffect(() => {
+        console.log('=== MerchantMenuManagement Categories Debug ===');
+        console.log('state.categories:', state.categories);
+        console.log('state.categories.length:', state.categories.length);
+        console.log('state.isCategoriesLoaded:', state.isCategoriesLoaded);
+    }, [state.categories, state.isCategoriesLoaded]);
+    
+    // Load categories on component mount
+    useEffect(() => {
+        const loadCategoriesData = async () => {
+            if (state.categories.length === 0) {
+                console.log('Loading categories on component mount');
+                try {
+                    await loadCategories();
+                } catch (error) {
+                    console.error('Failed to load categories:', error);
+                }
+            }
+        };
+        
+        loadCategoriesData();
+    }, []); // Run once on mount
+    
     // Fetch menu data from API
     useEffect(() => {
         let isMounted = true; // Add flag to avoid state updates after component unmount
@@ -33,6 +57,11 @@ const MerchantMenuManagement: React.FC = () => {
                 // Check if data already exists
                 if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0) {
                     console.log('Using cached menu data');
+                    // Still need to load categories if not already loaded
+                    if (state.categories.length === 0) {
+                        console.log('Loading categories for cached menu data');
+                        await loadCategories();
+                    }
                     setLoading(false);
                     return;
                 }
@@ -47,35 +76,26 @@ const MerchantMenuManagement: React.FC = () => {
                 // Check if component is still mounted
                 if (!isMounted) return;
                 
-                // Extract unique categories from menu data
-                const categoryMap = new Map();
-                response.menuItems.forEach((item: any) => {
-                    if (item.category && !categoryMap.has(item.category.id)) {
-                        categoryMap.set(item.category.id, {
+                // Load categories from API
+                await loadCategories();
+                
+                // Convert API data to AppContext format and sort by ID descending
+                const convertedItems = response.menuItems
+                    .map((item: any) => ({
+                        id: item.id.toString(),
+                        name: item.name,
+                        description: item.description,
+                        price: parseFloat(item.price.toString()),
+                        image_url: item.image_url,
+                        category_id: item.category?.id?.toString() || '1',
+                        category: item.category ? {
                             id: item.category.id,
                             name: item.category.name
-                        });
-                    }
-                });
-                const uniqueCategories = Array.from(categoryMap.values());
-                // Set category data to global state
-                setCategories(uniqueCategories);
-                
-                // Convert API data to AppContext format
-                const convertedItems = response.menuItems.map((item: any) => ({
-                    id: item.id.toString(),
-                    name: item.name,
-                    description: item.description,
-                    price: parseFloat(item.price.toString()),
-                    image_url: item.image_url,
-                    category_id: item.category?.id?.toString() || '1',
-                    category: item.category ? {
-                        id: item.category.id,
-                        name: item.category.name
-                    } : undefined,
-                    isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
-                    inventory: item.inventory || 0
-                }));
+                        } : undefined,
+                        isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                        inventory: item.inventory || 0
+                    }))
+                    .sort((a, b) => parseInt(b.id) - parseInt(a.id)); // Sort by ID in descending order
                 
                 // Update global state
                 dispatch({ 
@@ -265,7 +285,9 @@ const MerchantMenuManagement: React.FC = () => {
                             </button>
                         </div>
                     ) : (
-                        state.menuItems.map((item) => (
+                        state.menuItems
+                            .sort((a, b) => parseInt(b.id) - parseInt(a.id)) // Sort by ID in descending order (newest first)
+                            .map((item) => (
                             <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4">
                                 <div className="flex">
                                     {/* Left Section - Image */}

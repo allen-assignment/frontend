@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './Login.css';
 import axios from 'axios';
 import { useApp } from '../../shared/context/AppContext';
-import { tokenManager, userAPI } from '../../services/api';
+import { tokenManager, userAPI, API_BASE_URL } from '../../services/api';
 
 function Login({isLogin = true, onToggle = null}) {
     const navigate = useNavigate();
@@ -13,11 +13,6 @@ function Login({isLogin = true, onToggle = null}) {
     
     // Add component loading logs - use useEffect to avoid duplicate logs
     useEffect(() => {
-        console.log('Login component loaded', {
-            isLogin,
-            location: location.pathname,
-            timestamp: new Date().toISOString()
-        });
     }, []); // Empty dependency array, only execute once when component mounts
     
     // Internal state management for login/register toggle
@@ -30,7 +25,6 @@ function Login({isLogin = true, onToggle = null}) {
     const redirectTo = useMemo(() => {
         const redirect = new URLSearchParams(location.search).get('redirect') 
             || (isMerchantLogin ? '/merchant' : '/customer');
-        console.log('Calculate redirectTo:', redirect);
         return redirect;
     }, [location.search, isMerchantLogin]);
     
@@ -48,15 +42,7 @@ function Login({isLogin = true, onToggle = null}) {
     // Handle post-login logic - use JWT decoding to get user information
     const processAuthentication = useCallback(async (authResponse) => {
         try {
-            // 1. Store JWT token to localStorage
-            if (!authResponse.token) {
-                throw new Error('No token received');
-            }
-            
-            // Use tokenManager to store token
-            tokenManager.setToken(authResponse.token);
-            // 2. Decode JWT token to get user information
-            
+            // 1. Decode JWT token to get user information
             const decodedData = await tokenManager.decodeToken(authResponse.token);
             
             if (!decodedData || !decodedData.userinfo) {
@@ -64,7 +50,6 @@ function Login({isLogin = true, onToggle = null}) {
             }
             
             const userinfo = decodedData.userinfo;
-            console.log('Token decoded successfully:', userinfo);
             
                     // 3. Create user object from decoded token
                     const user = {
@@ -77,23 +62,46 @@ function Login({isLogin = true, onToggle = null}) {
                         merchant_name: userinfo.merchant_name // Merchant name (only for merchant users)
                     };
 
-                    console.log('Merchant ID check:', {
-                        merchant_id: user.merchant_id,
-                        type: typeof user.merchant_id,
-                        is_null: user.merchant_id === null,
-                        is_undefined: user.merchant_id === undefined,
-                        is_zero: user.merchant_id === 0,
-                        condition_result: !user.merchant_id && user.merchant_id !== 0
-                    });
-            console.log('User type determination:', {
-                user_type: userinfo.user_type,
-                parsed_usertype: parseInt(userinfo.user_type),
-                final_usertype: user.usertype,
-                is_merchant: user.usertype === 0,
-                is_customer: user.usertype === 1
-            });
             
-            // 4. Set login state
+            // 3.5 Validate user type matches login entrance
+            // If logging in from customer entrance but account is merchant type (user_type === 0)
+            if (!isMerchantLogin && user.usertype === 0) {
+                console.error('Account type error: Logged in with merchant account from customer entrance');
+                setError('Account type error! You are using a merchant account, please login from the merchant entrance.');
+                setMessage(''); // Clear success message
+                setUsername(''); // Clear username field
+                setPassword(''); // Clear password field
+                // Remove token
+                tokenManager.removeToken();
+                // Clear welcome page flag
+                localStorage.removeItem('hasSeenWelcome');
+                // Force navigate back to appropriate login page (not welcome modal)
+                setTimeout(() => {
+                    navigate(isMerchantLogin ? '/merchant/login' : '/login');
+                }, 2000);
+                return;
+            }
+            
+            // If logging in from merchant entrance but account is customer type (user_type === 1)
+            if (isMerchantLogin && user.usertype === 1) {
+                console.error('Account type error: Logged in with customer account from merchant entrance');
+                setError('Account type error! You are using a customer account, please login from the customer entrance.');
+                setMessage(''); // Clear success message
+                setUsername(''); // Clear username field
+                setPassword(''); // Clear password field
+                // Remove token
+                tokenManager.removeToken();
+                // Clear welcome page flag
+                localStorage.removeItem('hasSeenWelcome');
+                // Force navigate back to appropriate login page
+                setTimeout(() => {
+                    navigate(isMerchantLogin ? '/merchant/login' : '/login');
+                }, 2000);
+                return;
+            }
+            
+            // 4. Store token and set login state (only after successful validation)
+            tokenManager.setToken(authResponse.token);
             login(user);
             
             // 5. Set has seen welcome page (show menu directly after login)
@@ -101,51 +109,25 @@ function Login({isLogin = true, onToggle = null}) {
             
             // 6. If regular user and has taste preferences, load recommended items
             if (user.usertype === 1 && user.taste_preferences) {
-                console.log('User information:', {
-                    userID: user.id,
-                    username: user.username,
-                    userType: user.usertype,
-                    tastePreferences: user.taste_preferences
-                });
-                console.log('🔍 Starting to load recommended items...');
                 try {
                     await loadRecommendations(user.taste_preferences, '1', 3);
-                    console.log('Recommendation loading completed!');
                 } catch (error) {
                     console.error('Failed to load recommendations:', error);
                 }
             } else {
-                console.log('User has no taste preferences or not regular user, skip recommendation loading:', {
-                    userType: user.usertype,
-                    tastePreferences: user.taste_preferences
-                });
             }
             
             // 7. Navigate based on user type
-            console.log('Ready to navigate:', {
-                usertype: user.usertype,
-                redirectTo: redirectTo,
-                is_merchant: user.usertype === 0,
-                is_customer: user.usertype === 1,
-                merchant_id: user.merchant_id
-            });
             
             // ⚠️ Use setTimeout to ensure React state update completes before navigation
             setTimeout(() => {
                 if (user.usertype === 0) {
                     // Merchant user navigate to merchant dashboard
-                    console.log('Merchant user, navigate to:', redirectTo);
-                    console.log('Merchant info:', {
-                        merchant_id: user.merchant_id,
-                        merchant_name: user.merchant_name,
-                        usertype: user.usertype
-                    });
                     // Use redirectTo (already determined above based on path)
                     navigate(redirectTo);
                     
                 } else {
                     // Regular user navigate to menu homepage
-                    console.log('Regular user, navigate to menu homepage:', redirectTo);
                     navigate(redirectTo);
                 }
             }, 100); // Delay 100ms to ensure state update completes
@@ -161,16 +143,6 @@ function Login({isLogin = true, onToggle = null}) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        console.log('=====================================');
-        console.log('Login form submission triggered!', { 
-            username, 
-            password: password ? '***' : 'empty',
-            isLoginMode,
-            isMerchantLogin,
-            redirectTo,
-            timestamp: new Date().toISOString()
-        });
-        console.log('=====================================');
         setMessage('');
         setError('');
         
@@ -185,39 +157,19 @@ function Login({isLogin = true, onToggle = null}) {
         try {
             if (isLoginMode) {
                 // Login logic - use userAPI
-                console.log('🔐 Starting login request...', { 
-                    username,
-                    apiUrl: 'http://localhost:8000/user/login'
-                });
                 
                 const res = await userAPI.login({
                     username,
                     password
                 });
                 
-                console.log('✅ Login response:', res);
                 setMessage(res.message);
                 
                 // Handle post-login logic
-                console.log('📋 Starting to process authentication...');
                 await processAuthentication(res);
-                console.log('✅ Authentication processing completed');
             } else {
                 // Registration logic - use userAPI
-                console.log('📝 Starting registration request...', { 
-                    username,
-                    apiUrl: 'http://localhost:8000/user/register'
-                });
                 
-                console.log('Registration data:', {
-                    username,
-                    email,
-                    merchantName,
-                    tastePreferences: tastePreferences,
-                    tastePreferencesString: tastePreferences.join(','),
-                    birth_date: birthDate,
-                    usertype: parseInt(usertype)
-                });
                 
                 const res = await userAPI.register({
                     username,
@@ -386,7 +338,7 @@ function Login({isLogin = true, onToggle = null}) {
 
                     <button 
                         type="submit"
-                        className="w-100 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                        className="submit-btn"
                     >
                         {isLoginMode ? 'Login' : 'Register'}
                     </button>

@@ -1,58 +1,21 @@
-/* 登录页面容器 */
+/* Login page container */
 .login-page-container {
-    min-height: calc(100vh - 64px); /* 减去Header高度 */
+    min-height: calc(100vh - 64px); /* Subtract header height */
     background-color: #ffffff;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 20px;
-    padding-top: 80px; /* 为Header留出空间 */
+    padding-top: 80px; /* Space for header */
 }
 
-/* 商户登录页面容器 - 无导航栏 */
+/* Merchant login page container - no navigation bar */
 .login-page-container.no-header {
-    min-height: 100vh; /* 全屏高度 */
-    padding-top: 20px; /* 移除Header空间 */
+    min-height: 100vh; /* Full screen height */
+    padding-top: 20px; /* Remove header space */
 }
 
-/* Login组件容器 */
-.login-container {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-/* 登录头部 */
-.login-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.login-header h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-}
-
-.login-header p {
-    font-size: 1rem;
-    color: #6b7280;
-    margin: 0;
-}
-
-/* 登录表单 */
-.login-form {
-    width: 100%;
-}
-
-/* 登录页脚 */
-.login-footer {
-    margin-top: 1.5rem;
-    text-align: center;
-}
-
-/* 登录卡片样式 */
+/* Login card styles */
 .auth-card {
     width: 100%;
     max-width: 400px;
@@ -66,13 +29,13 @@
     margin: 0 auto;
 }
 
-/* 卡片内容区域 */
+/* Card body area */
 .auth-card .card-body {
     background-color: transparent !important;
     padding: 0;
 }
 
-/* 表单控件样式 */
+/* Form control styles */
 .auth-card .form-control {
     font-size: 1rem;
     padding: 0.75rem 1rem;
@@ -91,7 +54,7 @@
     outline: none;
 }
 
-/* 按钮样式 */
+/* Button styles */
 .auth-card button {
     font-size: 1rem;
     padding: 0.75rem 1.5rem;
@@ -113,21 +76,7 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-.auth-card .toggle-btn {
-    background: none;
-    border: none;
-    color: #ef4444;
-    text-decoration: underline;
-    font-weight: 600;
-    padding: 0;
-    margin-left: 0.25rem;
-}
-
-.auth-card .toggle-btn:hover {
-    color: #dc2626;
-}
-
-/* 切换文本样式 */
+/* Toggle text styles */
 .toggle-text {
     font-size: 0.9rem;
     text-align: center;
@@ -144,31 +93,7 @@
     color: #dc2626;
 }
 
-/* 错误消息样式 */
-.error-message {
-    background-color: #fee;
-    color: #c33;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #fcc;
-    margin: 1rem 0;
-    font-size: 0.9rem;
-}
-
-/* 单选按钮间距样式 */
-.radio-spacing {
-    margin-right: 20px !important;
-}
-
-.radio-spacing .form-check-input {
-    margin-right: 8px !important;
-}
-
-.radio-spacing .form-check-label {
-    margin-left: 4px !important;
-}
-
-/* 口味偏好选择样式 */
+/* Taste preference selection styles */
 .preference-options {
     margin-top: 1rem !important;
     margin-bottom: 1.5rem !important;
@@ -219,33 +144,7 @@
     cursor: not-allowed;
 }
 
-/* 演示账户样式 */
-.demo-accounts {
-    margin-top: 2rem;
-    padding: 1rem;
-    background-color: rgba(239, 68, 68, 0.1);
-    border-radius: 8px;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.demo-accounts h4 {
-    color: #ef4444;
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
-    text-align: center;
-}
-
-.demo-account {
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-    color: #666;
-}
-
-.demo-account strong {
-    color: #333;
-}
-
-/* 响应式设计 */
+/* Responsive design */
 @media (max-width: 768px) {
     .login-page-container {
         padding: 15px;
@@ -277,13 +176,7 @@
         font-size: 0.85rem;
     }
 
-    .auth-card .form-control,
-    .auth-card button {
+    .auth-card .form-control {
         font-size: 0.95rem;
-    }
-    
-    .demo-accounts {
-        margin-top: 1.5rem;
-        padding: 0.75rem;
     }
 }

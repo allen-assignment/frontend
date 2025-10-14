@@ -18,7 +18,7 @@ const EditField = () => {
     const { field } = useParams();
     const location = useLocation();
     
-    // 处理taste_preferences字段的初始化
+    // Handle initialization of taste_preferences field
     const initialValue = field === 'taste_preferences' 
         ? (location.state?.value ? location.state.value.split(',') : [])
         : (location.state?.value || "");

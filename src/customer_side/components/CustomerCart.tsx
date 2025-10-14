@@ -133,13 +133,21 @@ const CustomerCart: React.FC = () => {
                         Estimated waiting time: 15-20 min
                     </p>
                     
-                    
-                    <button 
-                        onClick={handleStartNewOrder}
-                        className="w-full py-4 bg-red-500 text-white rounded-lg text-lg font-medium hover:bg-red-600 transition-colors"
-                    >
-                        Start New Order
-                    </button>
+                    <div className="space-y-3">
+                        <button 
+                            onClick={() => navigate('/customer/order-history')}
+                            className="w-full py-3 bg-blue-500 text-white rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors"
+                        >
+                            View Order History
+                        </button>
+                        
+                        <button 
+                            onClick={handleStartNewOrder}
+                            className="w-full py-4 bg-red-500 text-white rounded-lg text-lg font-medium hover:bg-red-600 transition-colors"
+                        >
+                            Start New Order
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -166,7 +174,6 @@ const CustomerCart: React.FC = () => {
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                                 <div className="flex items-center justify-between">
                                     <span className="font-medium text-blue-800">Table {appState.currentTable}</span>
-                                    <span className={`w-2 h-2 rounded-full ${appState.isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                                 </div>
                             </div>
                         )}
@@ -199,7 +206,6 @@ const CustomerCart: React.FC = () => {
                                             <span className="text-sm text-green-800">
                                                 Ordering as: <span className="font-medium">{appState.currentUser.username}</span>
                                             </span>
-                                            <span className="w-2 h-2 rounded-full bg-green-500" title="Logged in" />
                                         </div>
                                     </div>
                                 )}
@@ -209,12 +215,12 @@ const CustomerCart: React.FC = () => {
                                         <span>¥{state.totalPrice.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>GST(10%)</span>
-                                        <span>¥{(state.totalPrice * 0.1).toFixed(2)}</span>
+                                        <span>GST(2%)</span>
+                                        <span>¥{(state.totalPrice * 0.02).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-lg font-semibold pt-3 border-t">
                                         <span>Total</span>
-                                        <span>¥{(state.totalPrice * 1.1).toFixed(2)}</span>
+                                        <span>¥{(state.totalPrice * 1.02).toFixed(2)}</span>
                                     </div>
                                 </div>
                                 

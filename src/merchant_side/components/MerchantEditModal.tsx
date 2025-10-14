@@ -11,10 +11,15 @@ interface MerchantEditModalProps {
 }
 
 const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, editingItem, categories = [] }) => {
-    const { updateMenuItem } = useApp();
+    const { updateMenuItem, dispatch } = useApp();
     const [formData, setFormData] = useState(editingItem || {});
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Debug: Log categories received
+    console.log('=== MerchantEditModal Categories Debug ===');
+    console.log('categories received:', categories);
+    console.log('categories.length:', categories.length);
 
     // Update formData when editingItem changes
     useEffect(() => {
@@ -33,8 +38,13 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
             return;
         }
 
+        console.log('=== MerchantEditModal Save Debug ===');
+        console.log('Form data:', formData);
+        console.log('Category ID:', formData.category_id);
+        console.log('Categories available:', categories);
+
         try {
-            await menuAPI.updateMenuItem({
+            const updateData = {
                 id: parseInt(formData.id),
                 name: formData.name.trim(),
                 description: formData.description.trim(),
@@ -43,15 +53,41 @@ const MerchantEditModal: React.FC<MerchantEditModalProps> = ({ isOpen, onClose, 
                 category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
                 isAvailable: formData.isAvailable !== false ? 1 : 0,
                 file: selectedFile || undefined,
-            });
-
-            // Update local state
-            updateMenuItem({
-                ...formData,
-                price: parseFloat(formData.price) || 0,
-                image_url: previewUrl || formData.image_url,
-            });
+            };
             
+            console.log('Update data being sent:', updateData);
+            
+            await menuAPI.updateMenuItem(updateData);
+
+            // Refresh menu data from API to get latest data
+            console.log('Refreshing menu data after update...');
+            const response = await menuAPI.getAllMenuItems();
+            
+            // Convert API data to AppContext format and sort by ID descending
+            const convertedItems = response.menuItems
+                .map((item: any) => ({
+                    id: item.id.toString(),
+                    name: item.name,
+                    description: item.description,
+                    price: parseFloat(item.price.toString()),
+                    image_url: item.image_url,
+                    category_id: item.category?.id?.toString() || '1',
+                    category: item.category ? {
+                        id: item.category.id,
+                        name: item.category.name
+                    } : undefined,
+                    isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                    inventory: item.inventory || 0
+                }))
+                .sort((a, b) => parseInt(b.id) - parseInt(a.id)); // Sort by ID in descending order
+            
+            // Update global state with fresh data
+            dispatch({ type: 'SET_MENU_ITEMS', payload: convertedItems });
+            dispatch({ type: 'SET_MENU_DATA_LOADED', payload: true });
+            
+            console.log('Menu data refreshed successfully');
+            
+            console.log('Update successful');
             onClose();
         } catch (error) {
             console.error('Failed to update menu item:', error);

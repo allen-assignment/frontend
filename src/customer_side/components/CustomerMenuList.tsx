@@ -48,8 +48,9 @@ const CustomerMenuList: React.FC = () => {
                     // Has URL parameter, use it
                     merchantIdParam = parseInt(merchantId);
                 } else if (state.isLoggedIn && state.currentUser) {
-                    // User is logged in, use token authentication
-                    merchantIdParam = undefined;
+                    // User is logged in, use merchant_id from current user context
+                    // merchant_id is already known from welcome page
+                    merchantIdParam = state.currentUser.merchant_id || 1;
                 } else {
                     // User not logged in and no URL parameter, use default merchant ID
                     merchantIdParam = 1;
@@ -60,7 +61,8 @@ const CustomerMenuList: React.FC = () => {
                     merchantIdParam,
                     isLoggedIn: state.isLoggedIn,
                     hasToken: !!state.currentUser,
-                    strategy: merchantId ? 'URL parameter' : (state.isLoggedIn ? 'Token authentication' : 'Default merchant ID')
+                    userMerchantId: state.currentUser?.merchant_id,
+                    strategy: merchantId ? 'URL parameter' : (state.isLoggedIn ? 'User context merchant_id' : 'Default merchant ID')
                 });
                 
                 const response = await menuAPI.getAllMenuItems(merchantIdParam);
