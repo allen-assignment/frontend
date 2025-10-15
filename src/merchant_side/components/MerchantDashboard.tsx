@@ -35,9 +35,15 @@ const MerchantDashboard: React.FC = () => {
                 // Check if data already exists and merchant ID matches
                 const merchantId = state.currentUser?.merchant_id;
                 if (state.isMenuDataLoaded && state.menuItems && state.menuItems.length > 0 && merchantId) {
-                    console.log('Using cached menu data');
-                    setLoading(false);
-                    return;
+                    // Additional check: verify that cached menu items belong to current merchant
+                    const cachedMerchantId = state.menuItems[0]?.merchant_id;
+                    if (cachedMerchantId && cachedMerchantId === merchantId) {
+                        console.log('Using cached menu data for merchant:', merchantId);
+                        setLoading(false);
+                        return;
+                    } else {
+                        console.log('Cached menu data belongs to different merchant, fetching fresh data');
+                    }
                 }
                 
                 console.log('Fetching menu data from API...', { hasToken: !!token });
@@ -82,8 +88,11 @@ const MerchantDashboard: React.FC = () => {
             }
         };
 
-        fetchMenuData();
-    }, [dispatch, state.currentUser?.merchant_id, state.isLoggedIn]);
+        // Only fetch if not already loaded
+        if (!state.isMenuDataLoaded || !state.menuItems || state.menuItems.length === 0) {
+            fetchMenuData();
+        }
+    }, []); // Empty dependency array - only run once on mount
 
     // Fetch order data
     useEffect(() => {
@@ -136,8 +145,11 @@ const MerchantDashboard: React.FC = () => {
             }
         };
 
-        fetchOrders();
-    }, [dispatch, state.isLoggedIn]); 
+        // Only fetch if not already loaded
+        if (!state.orders || state.orders.length === 0) {
+            fetchOrders();
+        }
+    }, []); // Empty dependency array - only run once on mount 
 
     // Calculate statistics
     const totalMenuItems = state.menuItems.length;
@@ -228,32 +240,7 @@ const MerchantDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Quick statistics cards - show as 0 */}
-                <div className="grid grid-cols-2 gap-4">
-                    {/* <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <Users className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Total Members</p>
-                                <p className="text-xl font-bold text-gray-800">{totalMembers}</p>
-                            </div>
-                        </div>
-                    </div> */}
-
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <Store className="w-5 h-5 text-orange-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Menu Items</p>
-                                <p className="text-xl font-bold text-gray-800">0/0</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* No statistics cards shown when no menu items */}
             </div>
         );
     }

@@ -64,10 +64,6 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
 
                 {!(isPersonalInfoPage || isEditPage) && (
                     <div className="flex items-center gap-4">
-                        {/* Connection status indicator */}
-                        <div className={`w-2 h-2 rounded-full ${appState.isConnected ? 'bg-green-500' : 'bg-red-500'}`} 
-                            title={appState.isConnected ? 'Connected' : 'Disconnected'} />
-                        
                         {/* Reset Button */}
                         <button
                             className="flex items-center gap-2 px-3 py-1 text-sm text-orange-600 hover:text-orange-800 transition-colors border border-orange-200 rounded-md hover:bg-orange-50"
@@ -75,9 +71,13 @@ const CustomerHeader: React.FC<CustomerHeaderProps> = ({ showLoginButtons, isLog
                                 // Clear user login state
                                 logout();
                                 console.log('User login state cleared');
-                                // Reset welcome page state
+                                
+                                // Clear all localStorage data
                                 localStorage.removeItem('hasSeenWelcome');
-                                console.log('Welcome page state reset');
+                                localStorage.removeItem('jwt_token');
+                                localStorage.clear(); // Clear all localStorage data
+                                console.log('All localStorage data cleared');
+                                
                                 // Navigate to root path (localhost:3000)
                                 window.location.href = '/';
                                 console.log('Navigated to root path');

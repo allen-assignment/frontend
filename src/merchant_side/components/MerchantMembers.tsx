@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, UserPlus, Mail, Phone, Calendar, ShoppingBag, DollarSign } from 'lucide-react';
+import { UserPlus, Mail, Phone } from 'lucide-react';
 import { useApp } from '../../shared/context/AppContext';
 
 const MerchantMembers: React.FC = () => {

@@ -10,6 +10,7 @@ import CustomerPopularItems from './components/CustomerPopularItems';
 import Profile from '../pages/profile/Profile';
 import PersonalInfo from '../pages/userInfo/PersonalInfo';
 import EditField from '../edit/EditField';
+import OrderHistory from '../pages/orderhistory/OrderHistory';
 
 const CustomerAppContent: React.FC = () => {
     const { setCurrentTable, state } = useApp();
@@ -93,8 +94,8 @@ const CustomerAppContent: React.FC = () => {
                 onClose={handleWelcomeClose} 
             />
             
-            {/* Header - Show when menu is visible and welcome modal is closed */}
-            {showMenu && !showWelcomeModal && (
+            {/* Header - Show when menu is visible and welcome modal is closed, but not on order-history page */}
+            {showMenu && !showWelcomeModal && location.pathname !== '/customer/order-history' && (
                 <CustomerHeader showLoginButtons={true} isLoggedIn={isLogin} />
             )}
             
@@ -104,6 +105,17 @@ const CustomerAppContent: React.FC = () => {
                 <Route path="/profile" element={<Profile userId={state.currentUser?.id} />} />
                 <Route path="/personal-info" element={<PersonalInfo />} />
                 <Route path="/edit/:field" element={<EditField />} />
+                <Route path="/order-history" element={
+                    <div className="min-h-screen bg-white">
+                        <main className="pt-8">
+                            <div className="container mx-auto px-4 py-6">
+                                <div className="max-w-4xl mx-auto">
+                                    <OrderHistory userId={state.currentUser?.id} showHeader={true} />
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                } />
                 
                 <Route path="/" element={
                     <main className={showMenu && !showWelcomeModal ? "pt-16" : ""}>

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { tokenManager } from '../../services/api';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { tokenManager, menuAPI } from '../../services/api';
 
 // Shared data type definitions
 export interface MenuItem {
@@ -53,7 +53,7 @@ export interface Order {
     menuItem: MenuItem;
     quantity: number;
   }[];
-  status: number; // 0: Paid, 1: Cancelled, other numbers: Error
+  status: string | number; // Backend returns string: "paid" / "cancelled", or number: 0 / 1
   total: number;
   createdAt: string;
 }
@@ -190,8 +190,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state, 
         currentUser: action.payload, 
         isLoggedIn: true,
-        // Keep menu data, only clear recommendation data
+        // Clear all data when switching users
+        menuItems: [], // Clear menu data
+        orders: [], // Clear order data
+        categories: [], // Clear category data
         recommendedItems: [], // Clear recommendation data
+        isMenuDataLoaded: false, // Reset menu data loading status
+        isCategoriesLoaded: false, // Reset category data loading status
         isRecommendationsLoaded: false // Reset recommendation data loading status
       };
     case 'SET_USER':
@@ -205,7 +210,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const newState = { 
         ...state, 
         currentUser: null, 
-        isLoggedIn: false 
+        isLoggedIn: false,
+        // Clear all data on logout
+        menuItems: [],
+        orders: [],
+        categories: [],
+        recommendedItems: [],
+        isMenuDataLoaded: false,
+        isCategoriesLoaded: false,
+        isRecommendationsLoaded: false
       };
       console.log('LOGOUT reducer completed, new state:', newState);
       return newState;
@@ -233,6 +246,8 @@ interface AppContextType {
   updateMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (id: string) => void;
   setCategories: (categories: Category[]) => void;
+  setCategoriesLoaded: (loaded: boolean) => void;
+  loadCategories: () => Promise<void>;
   addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
   setCurrentTable: (tableNumber: string) => void;
@@ -248,6 +263,30 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 // Provider component
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  // Initialize login state from token on app start
+  useEffect(() => {
+    const token = tokenManager.getToken();
+    if (token) {
+      try {
+        // Decode token to get user info
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const user: User = {
+          id: payload.user_id.toString(),
+          username: payload.username || 'User',
+          email: payload.email || '',
+          merchant_id: payload.merchant_id,
+          merchant_name: payload.merchant_name || '',
+          usertype: payload.user_type
+        };
+        console.log('Auto-login from token:', user);
+        dispatch({ type: 'LOGIN', payload: user });
+      } catch (error) {
+        console.error('Failed to decode token:', error);
+        tokenManager.removeToken();
+      }
+    }
+  }, []);
 
   // Convenience methods
   const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
@@ -270,6 +309,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     dispatch({ type: 'SET_CATEGORIES', payload: categories });
   };
 
+  const setCategoriesLoaded = (loaded: boolean) => {
+    dispatch({ type: 'SET_CATEGORIES_LOADED', payload: loaded });
+  };
+
+  const loadCategories = async () => {
+    try {
+      console.log('=== AppContext loadCategories ===');
+      console.log('Current categories:', state.categories);
+      
+      const response = await menuAPI.getCategories();
+      console.log('Categories API response:', response);
+      
+      // Convert MenuCategory to Category format
+      const convertedCategories = response.categories.map(cat => ({
+        id: cat.id,
+        name: cat.category_name,
+        description: cat.description || ''
+      }));
+      
+      console.log('Converted categories:', convertedCategories);
+      setCategories(convertedCategories);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      setCategories([]);
+    }
+  };
+
   const addOrder = (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => {
     const newOrder: Order = {
       id: Date.now().toString(),
@@ -284,11 +350,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
+      // Convert string status to number for API call
+      let statusNumber: number | undefined;
+      if (typeof status === 'string') {
+        statusNumber = status === 'paid' ? 0 : status === 'cancelled' ? 1 : undefined;
+      } else {
+        statusNumber = status;
+      }
+      
       // Call API to update order status
       const { orderAPI } = await import('../../services/api');
       await orderAPI.updateOrderStatus({
         order_id: parseInt(orderId),
-        status: status // 0: Paid, 1: Cancelled
+        status: statusNumber // 0: Paid, 1: Cancelled
       });
       
       // Update local state
@@ -427,6 +501,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateMenuItem,
     deleteMenuItem,
     setCategories,
+    setCategoriesLoaded,
+    loadCategories,
     addOrder,
     updateOrderStatus,
     setCurrentTable,

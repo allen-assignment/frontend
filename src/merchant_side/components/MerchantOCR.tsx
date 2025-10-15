@@ -36,7 +36,7 @@ const MerchantOCR: React.FC = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load category data from menu items
+  // Load category data from categories API
   const loadCategories = async () => {
     setLoadingCategories(true);
     try {
@@ -48,34 +48,18 @@ const MerchantOCR: React.FC = () => {
         return;
       }
       
-      // Get menu items which include category information
-      const response = await menuAPI.getAllMenuItems();
-      console.log('Loaded menu items with categories:', response.menuItems);
+      // Get categories directly from categories API
+      const response = await menuAPI.getCategories();
+      console.log('Loaded categories from API:', response.categories);
       
-      // Check if there are any menu data
-      const hasMenuData = response.menuItems && response.menuItems.length > 0;
-      console.log('Has menu data:', hasMenuData);
+      // Convert MenuCategory to the expected format
+      const convertedCategories = response.categories.map(cat => ({
+        id: cat.id,
+        name: cat.category_name,
+        description: cat.description || `Category for ${cat.category_name} items`
+      }));
       
-      if (hasMenuData) {
-        // Extract unique categories from menu items
-        const categoryMap = new Map();
-        response.menuItems.forEach((item: any) => {
-          if (item.category && item.category.id) {
-            categoryMap.set(item.category.id, {
-              id: item.category.id,
-              name: item.category.name,
-              description: `Category for ${item.category.name} items`
-            });
-          }
-        });
-        
-        const extractedCategories = Array.from(categoryMap.values());
-        console.log('Extracted categories from existing menu data:', extractedCategories);
-        setCategories(extractedCategories);
-      } else {
-        console.log('No existing menu data found, categories will be empty');
-        setCategories([]);
-      }
+      setCategories(convertedCategories);
     } catch (error) {
       console.error('Failed to load categories:', error);
       setError('Unable to load category data, please check network connection');
@@ -252,12 +236,16 @@ const MerchantOCR: React.FC = () => {
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleImageUpload called');
+    console.log('event.target.files:', event.target.files);
     const file = event.target.files?.[0];
     if (file) {
+      console.log('File selected:', file.name, file.type, file.size);
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageDataUrl = e.target?.result as string;
+        console.log('Image data URL created, length:', imageDataUrl.length);
         setUploadedImage(imageDataUrl);
         setImagePreview(imageDataUrl);
         setShowResults(false);
@@ -265,38 +253,40 @@ const MerchantOCR: React.FC = () => {
         setError(null);
       };
       reader.readAsDataURL(file);
+    } else {
+      console.log('No file selected');
     }
   };
 
-  // Load demo image for testing
-  const handleLoadDemoImage = async () => {
-    try {
-      // Load menu.jpg from public directory
-      const response = await fetch('/menu.jpg');
-      const blob = await response.blob();
-      const file = new File([blob], 'menu.jpg', { type: 'image/jpeg' });
-      
-      // Set file to state
-      setSelectedFile(file);
-      
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-      setUploadedImage(previewUrl);
-      
-      // Reset other states
-      setShowResults(false);
-      setOcrResults([]);
-      setOriginalOcrResults([]);
-      setError(null);
-      setIsCompleting(false);
-      
-      console.log('Demo image loaded successfully, click Start Recognition to test');
-    } catch (error) {
-      console.error('Failed to load demo image:', error);
-      setError('Failed to load demo image, please check if file exists in public directory');
-    }
-  };
+  // Load demo image for testing - COMMENTED OUT
+  // const handleLoadDemoImage = async () => {
+  //   try {
+  //     // Load menu.jpg from public directory
+  //     const response = await fetch('/menu.jpg');
+  //     const blob = await response.blob();
+  //     const file = new File([blob], 'menu.jpg', { type: 'image/jpeg' });
+  //     
+  //     // Set file to state
+  //     setSelectedFile(file);
+  //     
+  //     // Create preview URL
+  //     const previewUrl = URL.createObjectURL(file);
+  //     setImagePreview(previewUrl);
+  //     setUploadedImage(previewUrl);
+  //     
+  //     // Reset other states
+  //     setShowResults(false);
+  //     setOcrResults([]);
+  //     setOriginalOcrResults([]);
+  //     setError(null);
+  //     setIsCompleting(false);
+  //     
+  //     console.log('Demo image loaded successfully, click Start Recognition to test');
+  //   } catch (error) {
+  //     console.error('Failed to load demo image:', error);
+  //     setError('Failed to load demo image, please check if file exists in public directory');
+  //   }
+  // };
 
   const handleEditItem = (item: OCRResult) => {
     setEditingItem(item);
@@ -371,7 +361,16 @@ const MerchantOCR: React.FC = () => {
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Upload Menu Image</h3>
             
-            {!uploadedImage && !imagePreview && !selectedFile ? (
+            {/* File input - always rendered but hidden */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            
+            {!uploadedImage && !imagePreview ? (
               <div className="text-center">
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Camera className="w-12 h-12 text-gray-400" />
@@ -379,14 +378,6 @@ const MerchantOCR: React.FC = () => {
                 <p className="text-gray-600 mb-4">
                   Upload a clear photo of your menu for automatic text recognition
                 </p>
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -395,26 +386,29 @@ const MerchantOCR: React.FC = () => {
                     <Upload className="w-4 h-4 inline mr-2" />
                     Choose Image
                   </button>
-                  <button
+                  {/* Load Demo button - COMMENTED OUT */}
+                  {/* <button
                     onClick={handleLoadDemoImage}
                     className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
                   >
                     <Image className="w-4 h-4 inline mr-2" />
                     Load Demo
-                  </button>
+                  </button> */}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Supports JPG, PNG, PDF format menu images, or load a demo image for testing
+                  Supports JPG, PNG, PDF format menu images
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="relative">
-                  <img
-                    src={imagePreview || uploadedImage || ''}
-                    alt="Uploaded menu"
-                    className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
-                  />
+                  <div className="relative">
+                    {(imagePreview || uploadedImage) && (
+                      <img
+                        src={imagePreview || uploadedImage || undefined}
+                        alt="Uploaded menu"
+                        className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+                      />
+                    )}
                   <button
                     onClick={() => {
                       setUploadedImage(null);
@@ -762,13 +756,6 @@ const MerchantOCR: React.FC = () => {
               <p>3. <strong>Review results</strong> and edit if needed</p>
               <p>4. <strong>Delete unwanted items</strong> if necessary</p>
               <p>5. <strong>Complete import</strong> to add all items to your menu</p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">Import Logic:</h4>
-              <div className="space-y-1 text-blue-600 text-xs">
-                <p>• <strong>No modifications</strong>: Use preview_id for batch import (valid for 15 minutes)</p>
-                <p>• <strong>With modifications</strong>: Add modified item data individually</p>
-              </div>
             </div>
           </div>
         </div>

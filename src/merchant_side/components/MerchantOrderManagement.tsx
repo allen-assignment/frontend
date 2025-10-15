@@ -65,29 +65,26 @@ const MerchantOrderManagement: React.FC = () => {
 
     const statusOptions = [
         { value: 'all', label: 'All Orders', count: orders.length },
-        { value: 0, label: 'Paid', count: orders.filter(o => o.status === 0).length },
-        { value: 1, label: 'Cancelled', count: orders.filter(o => o.status === 1).length }
+        { value: 'paid', label: 'Paid', count: orders.filter(o => o.status === 'paid' || o.status === 0).length },
+        { value: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled' || o.status === 1).length }
     ];
 
-    const getStatusColor = (status: number) => {
-        if (status === 0) return 'bg-green-100 text-green-800';
-        if (status === 1) return 'bg-red-100 text-red-800';
-        // Other numbers display as error
+    const getStatusColor = (status: string | number) => {
+        if (status === 'paid' || status === 0) return 'bg-green-100 text-green-800';
+        if (status === 'cancelled' || status === 1) return 'bg-red-100 text-red-800';
         return 'bg-gray-200 text-gray-900';
     };
 
-    const getStatusIcon = (status: number) => {
-        if (status === 0) return <CheckCircle className="w-4 h-4" />;
-        if (status === 1) return <XCircle className="w-4 h-4" />;
-        // Other numbers display as error
+    const getStatusIcon = (status: string | number) => {
+        if (status === 'paid' || status === 0) return <CheckCircle className="w-4 h-4" />;
+        if (status === 'cancelled' || status === 1) return <XCircle className="w-4 h-4" />;
         return <XCircle className="w-4 h-4" />;
     };
 
-    const getStatusText = (status: number) => {
-        if (status === 0) return 'Paid';
-        if (status === 1) return 'Cancelled';
-        // Other numbers display as error
-        return 'Error';
+    const getStatusText = (status: string | number) => {
+        if (status === 'paid' || status === 0) return 'Paid';
+        if (status === 'cancelled' || status === 1) return 'Cancelled';
+        return String(status) || 'Unknown';
     };
 
     return (
@@ -104,7 +101,7 @@ const MerchantOrderManagement: React.FC = () => {
             <div className="px-6 py-6 pb-24">
                 <div className="max-w-4xl mx-auto">
                 {/* Status Filter */}
-                <div className="grid grid-cols-2 gap-2 mb-6">
+                <div className="grid grid-cols-3 gap-2 mb-6">
                     {statusOptions.map((option) => (
                         <button
                             key={option.value}

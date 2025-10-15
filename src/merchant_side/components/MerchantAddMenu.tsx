@@ -5,7 +5,7 @@ import { useApp } from '../../shared/context/AppContext';
 import { menuAPI } from '../../services/api';
 
 const MerchantAddMenu: React.FC = () => {
-    const { state, setCategories, dispatch } = useApp();
+    const { state, setCategories, loadCategories, dispatch } = useApp();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -20,50 +20,31 @@ const MerchantAddMenu: React.FC = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loadingCategories, setLoadingCategories] = useState(true);
+    
+    // New category dialog state
+    const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryDescription, setNewCategoryDescription] = useState('');
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
-    // Load categories on component mount
+    // Load categories on component mount - only once
     useEffect(() => {
-        const loadCategories = async () => {
+        const loadCategoriesData = async () => {
             try {
                 setLoadingCategories(true);
                 
                 // If categories already exist in global state, use them directly
                 if (state.categories && state.categories.length > 0) {
-                    // Set default category
-                    if (!formData.category_id) {
-                        setFormData(prev => ({
-                            ...prev,
-                            category_id: state.categories[0].id.toString()
-                        }));
-                    }
                     setLoadingCategories(false);
                     return;
                 }
                 
                 // Otherwise fetch category data from API
-                const response = await menuAPI.getAllMenuItems();
+                await loadCategories();
                 
-                // Extract unique categories from menu data
-                const categoryMap = new Map();
-                response.menuItems.forEach((item: any) => {
-                    if (item.category && !categoryMap.has(item.category.id)) {
-                        categoryMap.set(item.category.id, {
-                            id: item.category.id,
-                            name: item.category.name
-                        });
-                    }
-                });
-                const uniqueCategories = Array.from(categoryMap.values());
-                
-                // Set category data to global state
-                setCategories(uniqueCategories);
-                
-                // Set default category
-                if (uniqueCategories.length > 0 && !formData.category_id) {
-                    setFormData(prev => ({
-                        ...prev,
-                        category_id: uniqueCategories[0].id.toString()
-                    }));
+                // If no categories exist, allow manual input
+                if (state.categories.length === 0) {
+                    console.log('No existing categories found, allowing manual input');
                 }
             } catch (error) {
                 console.error('Failed to load categories:', error);
@@ -72,8 +53,8 @@ const MerchantAddMenu: React.FC = () => {
             }
         };
 
-        loadCategories();
-    }, [state.categories, formData.category_id]);
+        loadCategoriesData();
+    }, []); // Empty dependency array - only run once on mount
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -96,6 +77,55 @@ const MerchantAddMenu: React.FC = () => {
         }
     };
 
+    // Handle creating new category
+    const handleCreateCategory = async () => {
+        if (!newCategoryName.trim()) {
+            alert('Please enter a category name');
+            return;
+        }
+
+        try {
+            setIsCreatingCategory(true);
+            
+            const categoryResponse = await menuAPI.addCategory({
+                category_name: newCategoryName.trim(),
+                description: newCategoryDescription.trim() || `Category for ${newCategoryName.trim()}`
+            });
+            
+            // Validate response
+            if (!categoryResponse || !categoryResponse.category_id) {
+                throw new Error('Invalid response from server: missing category_id');
+            }
+            
+            // Add new category to state
+            const newCategory = {
+                id: categoryResponse.category_id,
+                name: categoryResponse.category_name
+            };
+            
+            const updatedCategories = [...state.categories, newCategory];
+            setCategories(updatedCategories);
+            
+            // Select the newly created category
+            setFormData(prev => ({
+                ...prev,
+                category_id: categoryResponse.category_id.toString()
+            }));
+            
+            // Close dialog and reset form
+            setShowCategoryDialog(false);
+            setNewCategoryName('');
+            setNewCategoryDescription('');
+            
+            alert('Category created successfully!');
+        } catch (error: any) {
+            console.error('Error creating category:', error);
+            alert(`Failed to create category: ${error.response?.data?.error || error.message}`);
+        } finally {
+            setIsCreatingCategory(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -104,6 +134,12 @@ const MerchantAddMenu: React.FC = () => {
             // Validate form
             if (!formData.name.trim() || !formData.description.trim() || !formData.price || !formData.inventory) {
                 alert('Please fill in all required fields');
+                return;
+            }
+
+            // Validate category
+            if (!formData.category_id) {
+                alert('Please select a category');
                 return;
             }
 
@@ -154,7 +190,8 @@ const MerchantAddMenu: React.FC = () => {
             navigate('/merchant/menu');
         } catch (error) {
             console.error('Error adding menu item:', error);
-            alert('Failed to add menu item. Please try again.');
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to add menu item: ${errorMessage}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -256,29 +293,47 @@ const MerchantAddMenu: React.FC = () => {
                                 <label className="block text-sm font-bold text-gray-800 mb-2">
                                     Category *
                                 </label>
-                                <select 
-                                    name="category_id"
-                                    value={formData.category_id}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                                    required
-                                    disabled={loadingCategories}
-                                >
-                                    {loadingCategories ? (
-                                        <option value="">Loading categories...</option>
-                                    ) : state.categories.length === 0 ? (
-                                        <option value="">No categories available</option>
-                                    ) : (
-                                        <>
+                                {loadingCategories ? (
+                                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500">
+                                        Loading categories...
+                                    </div>
+                                ) : state.categories.length === 0 ? (
+                                    <div>
+                                        <div className="text-center py-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                            <p className="text-gray-600 mb-3">No categories yet</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCategoryDialog(true)}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                            >
+                                                Create First Category
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <select 
+                                            name="category_id"
+                                            value={formData.category_id}
+                                            onChange={handleChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 mb-2"
+                                        >
                                             <option value="">Select a category</option>
                                             {state.categories.map(category => (
                                                 <option key={category.id} value={category.id.toString()}>
                                                     {category.name}
                                                 </option>
                                             ))}
-                                        </>
-                                    )}
-                                </select>
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCategoryDialog(true)}
+                                            className="text-sm text-blue-500 hover:text-blue-600 underline"
+                                        >
+                                            + Create New Category
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -361,6 +416,67 @@ const MerchantAddMenu: React.FC = () => {
                     </form>
                 </div>
             </div>
+
+            {/* Create Category Dialog */}
+            {showCategoryDialog && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Create New Category</h3>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800 mb-2">
+                                    Category Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                    placeholder="e.g., Appetizers, Main Course, Desserts"
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800 mb-2">
+                                    Description (Optional)
+                                </label>
+                                <textarea
+                                    value={newCategoryDescription}
+                                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                    placeholder="Brief description of this category"
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowCategoryDialog(false);
+                                    setNewCategoryName('');
+                                    setNewCategoryDescription('');
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                                disabled={isCreatingCategory}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCreateCategory}
+                                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={isCreatingCategory || !newCategoryName.trim()}
+                            >
+                                {isCreatingCategory ? 'Creating...' : 'Create'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

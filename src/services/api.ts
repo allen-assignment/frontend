@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API base configuration
-const API_BASE_URL = 'http://localhost:8000';
+export const API_BASE_URL = 'http://localhost:8000';
 
 // Create axios instance
 const api = axios.create({
@@ -241,6 +241,17 @@ export const menuAPI = {
     return response.data;
   },
 
+  // Get all menu categories
+  getCategories: async (): Promise<{ categories: MenuCategory[] }> => {
+    console.log('=== getCategories API Call ===');
+    console.log('Calling /menu/categories/');
+    
+    const response = await api.get('/menu/categories/');
+    console.log('Categories API response:', response.data);
+    
+    return response.data;
+  },
+
   // Add menu item (supports file upload via multipart/form-data)
   addMenuItem: async (itemData: {
     category_id: number;
@@ -292,6 +303,9 @@ export const menuAPI = {
     isAvailable?: number;
     file?: File;
   }) => {
+    console.log('=== updateMenuItem API Call ===');
+    console.log('Item data received:', itemData);
+    
     const formData = new FormData();
     if (itemData.id != null) formData.append('id', String(itemData.id));
     if (itemData.item_id != null) formData.append('item_id', String(itemData.item_id));
@@ -303,9 +317,16 @@ export const menuAPI = {
     if (itemData.isAvailable != null) formData.append('isAvailable', String(itemData.isAvailable));
     if (itemData.file) formData.append('file', itemData.file);
 
+    console.log('FormData contents:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
     const response = await api.post('/menu/item/update/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    
+    console.log('Update response:', response.data);
     return response.data; 
   },
 

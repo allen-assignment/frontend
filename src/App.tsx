@@ -8,7 +8,7 @@ import CustomerHeader from './customer_side/components/CustomerHeader';
 import LoginPage from './pages/login';
 import './index.css';
 
-function App() {
+const App: React.FC = () => {
   return (
     <AppProvider>
       <Routes>
@@ -16,8 +16,7 @@ function App() {
         <Route path="/login" element={
           <CustomerCartProvider>
             <div className="min-h-screen bg-white">
-              <CustomerHeader showLoginButtons={true} isLoggedIn={false} />
-              <div className="login-page-container">
+              <div className="login-page-container no-header">
                 <LoginPage />
               </div>
             </div>
@@ -49,6 +48,6 @@ function App() {
       </Routes>
     </AppProvider>
   );
-}
+};
 
 export default App;

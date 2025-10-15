@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Card, Spinner, Alert, Badge } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import { orderAPI } from "../../services/api";
 import "./OrderHistory.css";
 
-const OrderHistory = ({ userId }) => {
+const OrderHistory = ({ userId, showHeader = false }) => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -22,11 +24,36 @@ const OrderHistory = ({ userId }) => {
             });
     }, []);
 
-    if (loading) return <Spinner animation="border" className="mt-3" />;
-    if (error) return <Alert variant="danger" className="mt-3">{error}</Alert>;
+    if (loading) return (
+        <div className="text-center">
+            {showHeader && <h1 className="text-2xl font-bold mb-6">Order History</h1>}
+            <Spinner animation="border" className="mt-3" />
+        </div>
+    );
+    
+    if (error) return (
+        <div className="text-center">
+            {showHeader && <h1 className="text-2xl font-bold mb-6">Order History</h1>}
+            <Alert variant="danger" className="mt-3">{error}</Alert>
+        </div>
+    );
 
     return (
         <div className="order-history">
+            {showHeader && (
+                <div className="flex items-center justify-between mb-6">
+                    <button 
+                        onClick={() => navigate('/customer', { replace: true })}
+                        className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
+                    >
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h1 className="text-2xl font-bold">Order History</h1>
+                    <div className="w-24"></div> {/* Spacer for centering */}
+                </div>
+            )}
             {orders.map((order) => (
                 <Card key={order.order_id} className="mb-4 shadow-sm p-3 history-card">
                     <div className="order-header">

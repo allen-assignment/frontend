@@ -9,17 +9,26 @@ const CustomerPopularItems: React.FC = () => {
     const { addToCart, removeFromCart, updateQuantity, state: cartState } = useCart();
     const [currentIndex, setCurrentIndex] = useState(0);
     
-    // Prioritize recommended items, if no recommended items then use first 5 available menu items as popular items
+    // Prioritize recommended items, if no recommended items then randomly select 4 from all menu items
     const popularItems = useMemo(() => {
         if (state.recommendedItems.length > 0) {
-            
             const recommended = state.recommendedItems.slice(0, 5);
             console.log('Display recommended items:', recommended);
             return recommended;
         }
         
-        const regularItems = state.menuItems.slice(0, 5);
-        return regularItems;
+        // Randomly select 4 items from all menu items
+        if (state.menuItems.length === 0) {
+            return [];
+        }
+        
+        // Create a copy of menu items and shuffle them
+        const shuffledItems = [...state.menuItems].sort(() => Math.random() - 0.5);
+        
+        // Take first 4 items
+        const randomItems = shuffledItems.slice(0, 4);
+        console.log('Display random popular items:', randomItems);
+        return randomItems;
     }, [state.recommendedItems, state.menuItems]);
         
     const itemsPerPage = 2;
