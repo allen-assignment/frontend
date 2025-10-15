@@ -13,6 +13,8 @@ const ProfileDashboard = ({ userId }) => {
     const [userInfo, setUserInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    console.log('Profile rendered, userInfo:', userInfo);
+
 
     useEffect(() => {
         console.log('Profile useEffect - loading user info from token');
@@ -57,7 +59,7 @@ const ProfileDashboard = ({ userId }) => {
                     <div className="dashboard-container">
                         <div className="avatar-wrapper">
                             <Image
-                                src={`https://i.pravatar.cc/150?u=a042581f4e29026704d${userInfo?.id || userInfo?.username || userId}`}
+                                src={`https://i.pravatar.cc/150?u=${userInfo.user_id}`}
                                 roundedCircle
                                 width={60}
                                 height={60}

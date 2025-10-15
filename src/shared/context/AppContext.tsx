@@ -275,6 +275,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: payload.user_id.toString(),
           username: payload.username || 'User',
           email: payload.email || '',
+          birth_date: payload.birth_date || '',
           merchant_id: payload.merchant_id,
           merchant_name: payload.merchant_name || '',
           usertype: payload.user_type

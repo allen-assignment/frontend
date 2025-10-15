@@ -41,7 +41,7 @@ const PersonalInfo = () => {
                       
                         <div className="avatar-wrapper">
                             <Image
-                                src={`https://i.pravatar.cc/150?u=a042581f4e29026704d${userInfo.id || userInfo.username}`}
+                                src={`https://i.pravatar.cc/150?u=${parseInt(userInfo.id, 10)}`}
                                 roundedCircle
                                 width={60}
                                 height={60}
@@ -80,7 +80,14 @@ const PersonalInfo = () => {
                                 className="menu-card"
                                 onClick={() => goEdit("taste_preferences")}
                             >
-                                Taste Preferences: {userInfo.taste_preferences || 'Not set'}
+                                Taste Preferences: {
+                                userInfo.taste_preferences
+                                    ? (Array.isArray(userInfo.taste_preferences)
+                                            ? userInfo.taste_preferences.join(', ')
+                                            : userInfo.taste_preferences.replace(/[\[\]'\"]/g, '').split(',').map(t => t.trim()).filter(Boolean).join(', ')
+                                    )
+                                    : 'Not set'
+                            }
                             </Card>
                         )}
                     </div>

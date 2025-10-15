@@ -21,8 +21,14 @@ const EditField = () => {
     const location = useLocation();
     
     // Handle initialization of taste_preferences field
-    const initialValue = field === 'taste_preferences' 
-        ? (location.state?.value ? location.state.value.split(',') : [])
+    const initialValue = field === 'taste_preferences'
+        ? (() => {
+            const rawValue = location.state?.value;
+            if (!rawValue) return [];
+            if (Array.isArray(rawValue)) return rawValue;
+            const cleaned = rawValue.replace(/[\[\]'\"]/g, '');
+            return cleaned.split(',').map(item => item.trim()).filter(Boolean);
+        })()
         : (location.state?.value || "");
     
     const [value, setValue] = useState(initialValue);
@@ -47,6 +53,7 @@ const EditField = () => {
                     updateData.update_birth_date = value;
                     break;
                 case 'taste_preferences':
+                    updateData.update_taste_preferences = value;
                     break;
                 default:
                     break;
