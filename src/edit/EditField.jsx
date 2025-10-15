@@ -1,9 +1,11 @@
 // EditField.jsx
 import React, { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Form, Button } from "react-bootstrap";
+import {Form, Button} from "react-bootstrap";
 import CustomerHeader from "../customer_side/components/CustomerHeader";
 import "./EditPage.css";
+import {userAPI} from "../services/api";
+import { useApp } from "../shared/context/AppContext";
 
 const labels = {
     username: "Username",
@@ -24,14 +26,56 @@ const EditField = () => {
         : (location.state?.value || "");
     
     const [value, setValue] = useState(initialValue);
+    const [isLoading, setIsLoading] = useState(false);
+    const { state: appState, dispatch } = useApp();
 
-    const handleSave = () => {
-        const displayValue = field === 'taste_preferences' 
-            ? (Array.isArray(value) ? value.join(', ') : value)
-            : value;
-        alert(`${labels[field]} saved: ${displayValue}`);
-        navigate(-1);
+
+    const handleSave = async () => {
+        setIsLoading(true);
+        try {
+            const updateData = {};
+
+            switch (field) {
+                case 'username':
+                    updateData.update_username = value;
+                    break;
+                case 'email':
+                    updateData.update_email = value;
+                    break;
+                case 'birthday':
+                case 'birth_date':
+                    updateData.update_birth_date = value;
+                    break;
+                case 'taste_preferences':
+                    break;
+                default:
+                    break;
+            }
+            const response = await userAPI.updateUserInfo(updateData);
+
+            const displayValue = field === 'taste_preferences'
+                ? (Array.isArray(value) ? value.join(', ') : value)
+                : value;
+
+            const updatedUser = { ...appState.currentUser };
+            if (field === 'taste_preferences') {
+                updatedUser[field] = Array.isArray(value) ? value.join(',') : value;
+            } else {
+                updatedUser[field] = value;
+            }
+            console.log('Updating context with:', updatedUser);
+            dispatch({ type: 'SET_USER', payload: updatedUser });
+
+            navigate(-1);
+
+        } catch (error) {
+            console.error('Failed to update user info:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+
 
     return (
         <div className="min-h-screen bg-white">
@@ -39,7 +83,7 @@ const EditField = () => {
             <main className="pt-16">
                 <div className="py-8">
                     <div className="max-w-sm mx-auto">
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="  border border-gray-200 p-6 " style={{ backgroundColor: '#f0f0f4',borderRadius: '8px'}}>
                             <h2 className="text-lg font-semibold text-gray-900 mb-6">Edit {labels[field]}</h2>
 
                             <Form>
@@ -90,7 +134,7 @@ const EditField = () => {
                                             value={value}
                                             onChange={(e) => setValue(e.target.value)}
                                             placeholder={`Enter ${labels[field].toLowerCase()}`}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 "
                                         />
                                     )}
                                     {field === "username" && (

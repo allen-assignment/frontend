@@ -38,6 +38,7 @@ export interface Member {
 export interface User {
   id: string;
   username: string;
+  birth_date: string;
   email: string;
   usertype: number; // 0: merchant, 1: customer
   taste_preferences?: string;
@@ -93,6 +94,7 @@ type AppAction =
   | { type: 'SET_CURRENT_TABLE'; payload: string }
   | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
   | { type: 'LOGIN'; payload: User }
+  | { type: 'SET_USER'; payload: User }
   | { type: 'LOGOUT' }
   | { type: 'SET_RECOMMENDED_ITEMS'; payload: MenuItem[] }
   | { type: 'SET_RECOMMENDATIONS_LOADED'; payload: boolean }
@@ -191,6 +193,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
         // Keep menu data, only clear recommendation data
         recommendedItems: [], // Clear recommendation data
         isRecommendationsLoaded: false // Reset recommendation data loading status
+      };
+    case 'SET_USER':
+      console.log('SET_USER reducer called with payload:', action.payload);
+      return {
+        ...state,
+        currentUser: action.payload
       };
     case 'LOGOUT':
       console.log('LOGOUT reducer called, current state:', state);

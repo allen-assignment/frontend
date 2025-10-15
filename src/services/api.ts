@@ -209,6 +209,16 @@ export const userAPI = {
     return response.data;
   },
 
+  // Update userinfo (from token)
+  updateUserInfo: async (updateData: {
+      update_username?: string;
+      update_email?: string;
+      update_birth_date?: string;
+  }) => {
+      const response = await api.post('/user/updateuserinfo', updateData);
+      return response.data;
+  },
+
   // Vector search
   vectorSearch: async (searchData: {
     text: string;

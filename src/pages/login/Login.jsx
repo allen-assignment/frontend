@@ -71,6 +71,7 @@ function Login({isLogin = true, onToggle = null}) {
                         id: userinfo.user_id?.toString() || Date.now().toString(),
                         username: userinfo.username,
                         email: userinfo.user_email || email,
+                        birth_date: userinfo.birth_date,
                         usertype: userinfo.user_type !== undefined ? parseInt(userinfo.user_type) : 1,
                         taste_preferences: userinfo.taste_preferences,
                         merchant_id: userinfo.merchant_id, // Merchant ID (only for merchant users)

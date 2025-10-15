@@ -11,7 +11,9 @@ const PersonalInfo = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { state: appState } = useApp();
-    const userInfo = appState.currentUser || location.state?.userInfo;
+    const userInfo = appState.currentUser;
+    console.log('PersonalInfo rendered, userInfo:', userInfo);
+    console.log('Full appState:', appState);
     
     // Debug info removed
 
