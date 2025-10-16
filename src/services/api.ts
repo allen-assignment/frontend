@@ -398,7 +398,16 @@ export const orderAPI = {
     return response.data;
   },
 };
-
+export const paymentAPI = {
+    createPaymentIntent: async (paymentData: {
+        amount: number;
+        currency: string;
+        order_id: string;
+    }) => {
+        const response = await api.post('/api/payments/create-intent/', paymentData);
+        return response.data;
+    },
+};
 // OCR related API - menu recognition interface
 export const ocrAPI = {
   // Upload menu image for OCR recognition
