@@ -33,13 +33,11 @@ const MerchantMenuManagement: React.FC = () => {
     // Load categories on component mount
     useEffect(() => {
         const loadCategoriesData = async () => {
-            if (state.categories.length === 0) {
-                console.log('Loading categories on component mount');
-                try {
-                    await loadCategories();
-                } catch (error) {
-                    console.error('Failed to load categories:', error);
-                }
+            console.log('Loading categories on component mount');
+            try {
+                await loadCategories();
+            } catch (error) {
+                console.error('Failed to load categories:', error);
             }
         };
         
@@ -81,20 +79,26 @@ const MerchantMenuManagement: React.FC = () => {
                 
                 // Convert API data to AppContext format and sort by ID descending
                 const convertedItems = response.menuItems
-                    .map((item: any) => ({
-                        id: item.id.toString(),
-                        name: item.name,
-                        description: item.description,
-                        price: parseFloat(item.price.toString()),
-                        image_url: item.image_url,
-                        category_id: item.category?.id?.toString() || '1',
-                        category: item.category ? {
-                            id: item.category.id,
-                            name: item.category.name
-                        } : undefined,
-                        isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
-                        inventory: item.inventory || 0
-                    }))
+                    .map((item: any) => {
+                        // Find category by category_id
+                        const categoryId = item.category?.id?.toString() || item.category_id?.toString() || '1';
+                        const foundCategory = state.categories.find(cat => cat.id.toString() === categoryId);
+                        
+                        return {
+                            id: item.id.toString(),
+                            name: item.name,
+                            description: item.description,
+                            price: parseFloat(item.price.toString()),
+                            image_url: item.image_url,
+                            category_id: categoryId,
+                            category: foundCategory ? {
+                                id: foundCategory.id,
+                                name: foundCategory.name
+                            } : undefined,
+                            isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+                            inventory: item.inventory || 0
+                        };
+                    })
                     .sort((a, b) => parseInt(b.id) - parseInt(a.id)); // Sort by ID in descending order
                 
                 // Update global state
@@ -321,7 +325,12 @@ const MerchantMenuManagement: React.FC = () => {
                                         {/* Category and Ingredients */}
                                         <div className="mb-4">
                                             <p className="text-sm text-gray-500">
-                                                Category: {item.category?.name || 'Unknown'}
+                                                Category: {item.category?.name || 
+                                                    (item.category_id ? 
+                                                        state.categories.find(cat => cat.id.toString() === item.category_id)?.name || 'Unknown' 
+                                                        : 'Unknown'
+                                                    )
+                                                }
                                             </p>
                                             {/* {item.ingredients && item.ingredients.length > 0 && (
                                                 <p className="text-sm text-gray-500">

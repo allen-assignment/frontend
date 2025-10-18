@@ -93,13 +93,14 @@ const MerchantAddMenu: React.FC = () => {
             });
             
             // Validate response
-            if (!categoryResponse || !categoryResponse.category_id) {
-                throw new Error('Invalid response from server: missing category_id');
+            if (!categoryResponse || !categoryResponse.id) {
+                console.error('Server response:', categoryResponse);
+                throw new Error('Invalid response from server: missing id');
             }
             
             // Add new category to state
             const newCategory = {
-                id: categoryResponse.category_id,
+                id: categoryResponse.id,
                 name: categoryResponse.category_name
             };
             
@@ -109,13 +110,16 @@ const MerchantAddMenu: React.FC = () => {
             // Select the newly created category
             setFormData(prev => ({
                 ...prev,
-                category_id: categoryResponse.category_id.toString()
+                category_id: categoryResponse.id.toString()
             }));
             
             // Close dialog and reset form
             setShowCategoryDialog(false);
             setNewCategoryName('');
             setNewCategoryDescription('');
+            
+            // Reload categories to get the latest data
+            await loadCategories();
             
             alert('Category created successfully!');
         } catch (error: any) {

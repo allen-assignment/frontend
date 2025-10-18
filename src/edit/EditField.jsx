@@ -33,6 +33,7 @@ const EditField = () => {
     
     const [value, setValue] = useState(initialValue);
     const [isLoading, setIsLoading] = useState(false);
+    const [isUpdatingRecommendations, setIsUpdatingRecommendations] = useState(false);
     const { state: appState, dispatch } = useApp();
 
 
@@ -72,6 +73,53 @@ const EditField = () => {
             }
             console.log('Updating context with:', updatedUser);
             dispatch({ type: 'SET_USER', payload: updatedUser });
+
+            // If taste_preferences was updated, reload recommendations using vector-search
+            if (field === 'taste_preferences') {
+                setIsUpdatingRecommendations(true);
+                try {
+                    console.log('Reloading recommendations after taste preference update...');
+                    const tasteText = Array.isArray(value) ? value.join(', ') : value;
+                    
+                    // If no taste preferences selected, clear recommendations to show Popular Items
+                    if (!tasteText || tasteText.trim() === '') {
+                        console.log('No taste preferences selected, clearing recommendations');
+                        dispatch({ 
+                            type: 'SET_RECOMMENDED_ITEMS', 
+                            payload: [] 
+                        });
+                        return;
+                    }
+                    
+                    // Get merchant ID from URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const merchantId = urlParams.get('merchant_id') || '1';
+                    
+                    const vectorResponse = await userAPI.vectorSearch({
+                        text: tasteText,
+                        top_k: 5,
+                        restaurant_id: merchantId
+                    });
+                    
+                    console.log('Vector search response:', vectorResponse);
+                    
+                    // Update recommended items in context
+                    if (vectorResponse && vectorResponse.value) {
+                        dispatch({ 
+                            type: 'SET_RECOMMENDED_ITEMS', 
+                            payload: vectorResponse.value 
+                        });
+                        console.log('Updated recommended items:', vectorResponse.value);
+                    } else {
+                        console.log('No recommendations found in response:', vectorResponse);
+                    }
+                } catch (vectorError) {
+                    console.error('Failed to reload recommendations:', vectorError);
+                    // Don't fail the whole operation if vector search fails
+                } finally {
+                    setIsUpdatingRecommendations(false);
+                }
+            }
 
             navigate(-1);
 
@@ -162,9 +210,12 @@ const EditField = () => {
                                     <Button
                                         variant="primary"
                                         onClick={handleSave}
+                                        disabled={isLoading || isUpdatingRecommendations}
                                         className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700"
                                     >
-                                        Save
+                                        {isLoading ? 'Saving...' : 
+                                         isUpdatingRecommendations ? 'Updating Recommendations...' : 
+                                         'Save'}
                                     </Button>
                                 </div>
                             </Form>

@@ -237,8 +237,14 @@ export const menuAPI = {
     category_name: string;
     description?: string;
   }) => {
-    const response = await api.post('/menu/category/add/', categoryData);
-    return response.data;
+    try {
+      const response = await api.post('/menu/category/add/', categoryData);
+      console.log('Category creation response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Category creation error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   // Get all menu categories
