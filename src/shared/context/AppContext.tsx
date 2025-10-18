@@ -278,7 +278,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           birth_date: payload.birth_date || '',
           merchant_id: payload.merchant_id,
           merchant_name: payload.merchant_name || '',
-          usertype: payload.user_type
+          usertype: payload.user_type,
+          taste_preferences: payload.taste_preferences || '',
         };
         console.log('Auto-login from token:', user);
         dispatch({ type: 'LOGIN', payload: user });
