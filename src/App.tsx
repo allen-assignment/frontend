@@ -11,34 +11,31 @@ import './index.css';
 const App: React.FC = () => {
   return (
     <AppProvider>
-      <Routes>
-        {/* Login Page */}
-        <Route path="/login" element={
-          <CustomerCartProvider>
+      <CustomerCartProvider>
+        <Routes>
+          {/* Login Page */}
+          <Route path="/login" element={
             <div className="min-h-screen bg-white">
               <div className="login-page-container no-header">
                 <LoginPage />
               </div>
             </div>
-          </CustomerCartProvider>
-        } />
-        
-        {/* Customer */}
-        <Route path="/customer/*" element={<CustomerApp />} />
-        
-        {/* Merchant Login */}
-        <Route path="/merchant/login" element={
-          <CustomerCartProvider>
+          } />
+          
+          {/* Customer */}
+          <Route path="/customer/*" element={<CustomerApp />} />
+          
+          {/* Merchant Login */}
+          <Route path="/merchant/login" element={
             <div className="min-h-screen bg-white">
               <div className="login-page-container no-header">
                 <LoginPage />
               </div>
             </div>
-          </CustomerCartProvider>
-        } />
-        
-        {/* Merchant App - All merchant routes except login */}
-        <Route path="/merchant/*" element={<MerchantApp />} />
+          } />
+          
+          {/* Merchant App - All merchant routes except login */}
+          <Route path="/merchant/*" element={<MerchantApp />} />
         
         {/* Default */}
         <Route path="/" element={<CustomerApp />} />
@@ -46,6 +43,7 @@ const App: React.FC = () => {
         {/* Other unmatched routes redirect to customer page */}
         <Route path="*" element={<CustomerApp />} />
       </Routes>
+      </CustomerCartProvider>
     </AppProvider>
   );
 };

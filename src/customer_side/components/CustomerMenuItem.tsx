@@ -23,7 +23,7 @@ const CustomerMenuItem: React.FC<CustomerMenuItemProps> = ({ item }) => {
             setQuantity(0);
             setShowQuantity(false);
         }
-    }, [state.items, item.id]);
+    }, [state.items, item.id, state.totalItems]); // 添加 totalItems 作为依赖项
 
     const handleIncrement = () => {
         const inventory = item.inventory || 10; // Default inventory is 10

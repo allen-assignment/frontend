@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { MenuItem } from '../../shared/context/AppContext';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { MenuItem, useApp } from '../../shared/context/AppContext';
 
 // Define the cart item structure (extends MenuItem with quantity)
 export interface CartItem extends MenuItem {
@@ -28,19 +28,10 @@ type CartAction =
     | { type: 'ADD_ITEM'; payload: { item: MenuItem; quantity?: number } }
     | { type: 'REMOVE_ITEM'; payload: { itemId: string } }
     | { type: 'UPDATE_QUANTITY'; payload: { itemId: string; quantity: number } }
-    | { type: 'CLEAR_CART' };
+    | { type: 'CLEAR_CART' }
+    | { type: 'REFRESH_CART'; payload: CartState };
 
-// Create the initial cart state
-const initialState: CartState = {
-    items: [],
-    totalItems: 0,
-    totalPrice: 0,
-};
-
-// Create the cart context
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-// Helper function to calculate totals
+// Helper function to calculate totals (moved up to avoid hoisting issues)
 const calculateTotals = (items: CartItem[]): { totalItems: number; totalPrice: number } => {
     const totalItems = items.reduce((total, item) => total + item.quantity, 0);
     const totalPrice = items.reduce(
@@ -48,6 +39,52 @@ const calculateTotals = (items: CartItem[]): { totalItems: number; totalPrice: n
         0
     );
     return { totalItems, totalPrice };
+};
+
+// Load cart state from localStorage
+const loadCartFromStorage = (): CartState => {
+    try {
+        const savedCart = localStorage.getItem('customer_cart');
+        console.log('Loading cart from localStorage:', savedCart);
+        if (savedCart) {
+            const parsedCart = JSON.parse(savedCart);
+            console.log('Parsed cart data:', parsedCart);
+            // Recalculate totals to ensure consistency
+            const { totalItems, totalPrice } = calculateTotals(parsedCart.items || []);
+            const cartState = {
+                items: parsedCart.items || [],
+                totalItems,
+                totalPrice,
+            };
+            console.log('Loaded cart state:', cartState);
+            return cartState;
+        }
+    } catch (error) {
+        console.error('Failed to load cart from localStorage:', error);
+    }
+    console.log('No cart data found, returning empty state');
+    return {
+        items: [],
+        totalItems: 0,
+        totalPrice: 0,
+    };
+};
+
+// Create the initial cart state
+const initialState: CartState = loadCartFromStorage();
+
+// Create the cart context
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+// Helper function to save cart to localStorage
+const saveCartToStorage = (cartState: CartState) => {
+    try {
+        console.log('Saving cart to localStorage:', cartState);
+        localStorage.setItem('customer_cart', JSON.stringify(cartState));
+        console.log('Cart saved successfully');
+    } catch (error) {
+        console.error('Failed to save cart to localStorage:', error);
+    }
 };
 
 // Create the cart reducer
@@ -84,12 +121,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             // Calculate new totals
             const { totalItems, totalPrice } = calculateTotals(updatedItems);
 
-            return {
+            const newState = {
                 ...state,
                 items: updatedItems,
                 totalItems,
                 totalPrice,
             };
+            saveCartToStorage(newState);
+            return newState;
         }
 
         case 'REMOVE_ITEM': {
@@ -100,12 +139,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             // Calculate new totals
             const { totalItems, totalPrice } = calculateTotals(updatedItems);
 
-            return {
+            const newState = {
                 ...state,
                 items: updatedItems,
                 totalItems,
                 totalPrice,
             };
+            saveCartToStorage(newState);
+            return newState;
         }
 
         case 'UPDATE_QUANTITY': {
@@ -127,16 +168,29 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             // Calculate new totals
             const { totalItems, totalPrice } = calculateTotals(updatedItems);
 
-            return {
+            const newState = {
                 ...state,
                 items: updatedItems,
                 totalItems,
                 totalPrice,
             };
+            saveCartToStorage(newState);
+            return newState;
         }
 
         case 'CLEAR_CART':
-            return initialState;
+            const emptyState = {
+                items: [],
+                totalItems: 0,
+                totalPrice: 0,
+            };
+            saveCartToStorage(emptyState);
+            return emptyState;
+
+        case 'REFRESH_CART':
+            // Refresh cart state from localStorage (useful after login)
+            console.log('Refreshing cart state:', action.payload);
+            return action.payload;
 
         default:
             return state;
@@ -146,6 +200,49 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 // Create the CartProvider component
 export const CustomerCartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(cartReducer, initialState);
+    const { state: appState } = useApp();
+    
+    // Force re-sync cart state when component mounts (useful for login scenarios)
+    useEffect(() => {
+        const savedCart = localStorage.getItem('customer_cart');
+        if (savedCart) {
+            try {
+                const parsedCart = JSON.parse(savedCart);
+                const { totalItems, totalPrice } = calculateTotals(parsedCart.items || []);
+                const cartState = {
+                    items: parsedCart.items || [],
+                    totalItems,
+                    totalPrice,
+                };
+                // Dispatch a custom action to refresh the state
+                dispatch({ type: 'REFRESH_CART', payload: cartState });
+            } catch (error) {
+                console.error('Failed to refresh cart from localStorage:', error);
+            }
+        }
+    }, []); // Only run once on mount
+    
+    // Listen for login state changes and refresh cart state
+    useEffect(() => {
+        if (appState.isLoggedIn) {
+            console.log('User logged in, refreshing cart state...');
+            const savedCart = localStorage.getItem('customer_cart');
+            if (savedCart) {
+                try {
+                    const parsedCart = JSON.parse(savedCart);
+                    const { totalItems, totalPrice } = calculateTotals(parsedCart.items || []);
+                    const cartState = {
+                        items: parsedCart.items || [],
+                        totalItems,
+                        totalPrice,
+                    };
+                    dispatch({ type: 'REFRESH_CART', payload: cartState });
+                } catch (error) {
+                    console.error('Failed to refresh cart after login:', error);
+                }
+            }
+        }
+    }, [appState.isLoggedIn]); // Trigger when login state changes
 
     // Define the context methods
     const addToCart = (item: MenuItem, quantity = 1) => {

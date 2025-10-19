@@ -33,8 +33,11 @@ const EditField = () => {
     
     const [value, setValue] = useState(initialValue);
     const [isLoading, setIsLoading] = useState(false);
-    const [isUpdatingRecommendations, setIsUpdatingRecommendations] = useState(false);
-    const { state: appState, dispatch } = useApp();
+    const { state: appState, dispatch, loadRecommendations } = useApp();
+    
+    // Get merchant ID from URL parameters (extract once)
+    const urlParams = new URLSearchParams(window.location.search);
+    const merchantId = urlParams.get('merchant_id') || '1';
 
 
     const handleSave = async () => {
@@ -61,22 +64,41 @@ const EditField = () => {
             }
             const response = await userAPI.updateUserInfo(updateData);
 
-            const displayValue = field === 'taste_preferences'
-                ? (Array.isArray(value) ? value.join(', ') : value)
-                : value;
-
+            // Step 1: Immediately update local data for quick UI response
             const updatedUser = { ...appState.currentUser };
             if (field === 'taste_preferences') {
                 updatedUser[field] = Array.isArray(value) ? value.join(',') : value;
             } else {
                 updatedUser[field] = value;
             }
-            console.log('Updating context with:', updatedUser);
+            console.log('Immediate update with local data:', updatedUser);
             dispatch({ type: 'SET_USER', payload: updatedUser });
+
+            // Step 2: Fetch fresh data from backend to ensure consistency
+            console.log('Fetching fresh data from backend for consistency...');
+            try {
+                const freshUserData = await userAPI.getUserById();
+                
+                const user = {
+                    id: freshUserData.user_id.toString(), 
+                    username: freshUserData.username || 'User',
+                    email: freshUserData.user_email || '', 
+                    birth_date: freshUserData.birth_date || '',
+                    merchant_id: freshUserData.merchant_id, 
+                    merchant_name: freshUserData.merchant_name || '', 
+                    usertype: freshUserData.user_type, 
+                    taste_preferences: freshUserData.taste_preferences || '' 
+                };
+                
+                console.log('Final update with fresh backend data:', user);
+                dispatch({ type: 'SET_USER', payload: user });
+            } catch (error) {
+                console.error('Failed to fetch fresh data, keeping local update:', error);
+                // Keep the local update if backend fetch fails
+            }
 
             // If taste_preferences was updated, reload recommendations using vector-search
             if (field === 'taste_preferences') {
-                setIsUpdatingRecommendations(true);
                 try {
                     console.log('Reloading recommendations after taste preference update...');
                     const tasteText = Array.isArray(value) ? value.join(', ') : value;
@@ -88,36 +110,48 @@ const EditField = () => {
                             type: 'SET_RECOMMENDED_ITEMS', 
                             payload: [] 
                         });
+                        
+                        // Ensure menu data is properly loaded for Popular Items display
+                        if (!appState.isMenuDataLoaded || appState.menuItems.length === 0) {
+                            console.log('Menu data not loaded, loading menu data for Popular Items...');
+                            
+                            try {
+                                const { menuAPI } = await import('../services/api');
+                                const menuResponse = await menuAPI.getAllMenuItems(parseInt(merchantId));
+                                
+                                // Convert API data format to match AppContext MenuItem interface
+                                const convertedMenuItems = menuResponse.menuItems.map(item => ({
+                                    id: item.id.toString(),
+                                    name: item.name,
+                                    description: item.description || '',
+                                    price: parseFloat(item.price.toString()),
+                                    image_url: item.image_url,
+                                    category_id: item.category.id.toString(),
+                                    category: item.category,
+                                    merchant_id: item.merchant_id,
+                                    isAvailable: true,
+                                    inventory: item.inventory,
+                                    feature_one: item.feature_one,
+                                    feature_two: item.feature_two,
+                                    feature_three: item.feature_three
+                                }));
+                                
+                                dispatch({ type: 'SET_MENU_ITEMS', payload: convertedMenuItems });
+                                console.log('Menu data loaded for Popular Items display');
+                            } catch (menuError) {
+                                console.error('Failed to load menu data for Popular Items:', menuError);
+                            }
+                        }
                         return;
                     }
                     
-                    // Get merchant ID from URL parameters
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const merchantId = urlParams.get('merchant_id') || '1';
+                    // Use merchant ID from extracted URL parameters
                     
-                    const vectorResponse = await userAPI.vectorSearch({
-                        text: tasteText,
-                        top_k: 5,
-                        restaurant_id: merchantId
-                    });
-                    
-                    console.log('Vector search response:', vectorResponse);
-                    
-                    // Update recommended items in context
-                    if (vectorResponse && vectorResponse.value) {
-                        dispatch({ 
-                            type: 'SET_RECOMMENDED_ITEMS', 
-                            payload: vectorResponse.value 
-                        });
-                        console.log('Updated recommended items:', vectorResponse.value);
-                    } else {
-                        console.log('No recommendations found in response:', vectorResponse);
-                    }
+                    // Use AppContext's loadRecommendations function for proper data conversion
+                    await loadRecommendations(tasteText, merchantId, 5);
                 } catch (vectorError) {
                     console.error('Failed to reload recommendations:', vectorError);
                     // Don't fail the whole operation if vector search fails
-                } finally {
-                    setIsUpdatingRecommendations(false);
                 }
             }
 
@@ -210,12 +244,10 @@ const EditField = () => {
                                     <Button
                                         variant="primary"
                                         onClick={handleSave}
-                                        disabled={isLoading || isUpdatingRecommendations}
+                                        disabled={isLoading}
                                         className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700"
                                     >
-                                        {isLoading ? 'Saving...' : 
-                                         isUpdatingRecommendations ? 'Updating Recommendations...' : 
-                                         'Save'}
+                                        {isLoading ? 'Saving...' : 'Save'}
                                     </Button>
                                 </div>
                             </Form>

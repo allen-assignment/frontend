@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { tokenManager, menuAPI } from '../../services/api';
+import { tokenManager, menuAPI, userAPI, orderAPI } from '../../services/api';
 
 // Shared data type definitions
 export interface MenuItem {
@@ -78,6 +78,7 @@ interface AppState {
   isRecommendationsLoaded: boolean;
   isMenuDataLoaded: boolean;
   isCategoriesLoaded: boolean;
+  isOrdersLoaded: boolean;
 }
 
 // Action types
@@ -95,11 +96,13 @@ type AppAction =
   | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
   | { type: 'LOGIN'; payload: User }
   | { type: 'SET_USER'; payload: User }
+  | { type: 'SET_LOGGED_IN'; payload: boolean }
   | { type: 'LOGOUT' }
   | { type: 'SET_RECOMMENDED_ITEMS'; payload: MenuItem[] }
   | { type: 'SET_RECOMMENDATIONS_LOADED'; payload: boolean }
   | { type: 'SET_MENU_DATA_LOADED'; payload: boolean }
   | { type: 'SET_CATEGORIES_LOADED'; payload: boolean }
+  | { type: 'SET_ORDERS_LOADED'; payload: boolean }
   | { type: 'SET_ORDERS'; payload: Order[] };
 
 // Initial state
@@ -136,7 +139,8 @@ const initialState: AppState = {
   isRecommendationsLoaded: false,
   // Data loading status
   isMenuDataLoaded: false,
-  isCategoriesLoaded: false
+  isCategoriesLoaded: false,
+  isOrdersLoaded: false
 };
 
 // Reducer function
@@ -205,6 +209,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         currentUser: action.payload
       };
+    case 'SET_LOGGED_IN':
+      return {
+        ...state,
+        isLoggedIn: action.payload
+      };
     case 'LOGOUT':
       console.log('LOGOUT reducer called, current state:', state);
       const newState = { 
@@ -230,8 +239,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, isMenuDataLoaded: action.payload };
     case 'SET_CATEGORIES_LOADED':
       return { ...state, isCategoriesLoaded: action.payload };
+    case 'SET_ORDERS_LOADED':
+      return { ...state, isOrdersLoaded: action.payload };
     case 'SET_ORDERS':
-      return { ...state, orders: action.payload };
+      return { ...state, orders: action.payload, isOrdersLoaded: true };
     default:
       return state;
   }
@@ -250,6 +261,7 @@ interface AppContextType {
   loadCategories: () => Promise<void>;
   addOrder: (tableNumber: string, items: { menuItem: MenuItem; quantity: number }[]) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  loadOrders: () => Promise<void>;
   setCurrentTable: (tableNumber: string) => void;
   login: (user: User) => void;
   logout: () => void;
@@ -269,20 +281,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const token = tokenManager.getToken();
     if (token) {
       try {
-        // Decode token to get user info
+        // Decode token to get user_id only
         const payload = JSON.parse(atob(token.split('.')[1]));
-        const user: User = {
-          id: payload.user_id.toString(),
-          username: payload.username || 'User',
-          email: payload.user_email || '',
-          birth_date: payload.birth_date || '',
-          merchant_id: payload.merchant_id,
-          merchant_name: payload.merchant_name || '',
-          usertype: payload.user_type,
-          taste_preferences: payload.taste_preferences || '',
+        const userId = payload.user_id;
+        
+        console.log('Token found, fetching real-time user data for user_id:', userId);
+        
+        // Fetch real-time user data from backend
+        const fetchUserData = async () => {
+          try {
+            const userData = await userAPI.getUserById();
+            console.log('Real-time user data fetched:', userData);
+            console.log('Token payload for fallback fields:', payload);
+            
+            const user: User = {
+              id: userData.user_id.toString(), 
+              username: userData.username || 'User',
+              email: userData.user_email || '', 
+              birth_date: userData.birth_date || '',
+              merchant_id: userData.merchant_id, 
+              merchant_name: userData.merchant_name || '', 
+              usertype: userData.user_type, 
+              taste_preferences: userData.taste_preferences || '' 
+            };
+            
+            console.log('Auto-login with real-time data:', user);
+            dispatch({ type: 'SET_USER', payload: user });
+            // Set login state without clearing other data
+            dispatch({ type: 'SET_LOGGED_IN', payload: true });
+            
+            // Load recommendations if user has taste preferences
+            if (user.usertype === 1 && user.taste_preferences) {
+                console.log('Loading recommendations for user with preferences:', user.taste_preferences);
+                try {
+                    await loadRecommendations(user.taste_preferences, user.merchant_id?.toString() || '1', 5);
+                } catch (error) {
+                    console.error('Failed to load recommendations on auto-login:', error);
+                }
+            }
+          } catch (error) {
+            console.error('Failed to fetch real-time user data:', error);
+            // If cannot fetch latest data, logout directly to ensure data consistency
+            console.log('Logging out due to failed user data fetch');
+            tokenManager.removeToken();
+            dispatch({ type: 'LOGOUT' });
+            // Redirect to login page
+            window.location.href = '/login';
+          }
         };
-        console.log('Auto-login from token:', user);
-        dispatch({ type: 'LOGIN', payload: user });
+        
+        fetchUserData();
       } catch (error) {
         console.error('Failed to decode token:', error);
         tokenManager.removeToken();
@@ -335,6 +383,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Failed to load categories:', error);
       setCategories([]);
+    }
+  };
+
+  const loadOrders = async () => {
+    try {
+      console.log('=== AppContext loadOrders ===');
+      console.log('Current orders:', state.orders);
+      
+      const response = await orderAPI.getOrders();
+      console.log('Orders API response:', response);
+      
+      // Convert API order format to AppContext format
+      const convertedOrders = response.orders.map((order: any) => ({
+        id: order.order_id.toString(),
+        tableNumber: order.table_number,
+        items: order.items.map((item: any) => ({
+          menuItem: {
+            id: item.item_id.toString(),
+            name: item.name,
+            description: '',
+            price: item.item_price,
+            image_url: '',
+            category_id: '1',
+            isAvailable: true,
+            inventory: 0
+          },
+          quantity: item.quantity
+        })),
+        status: order.status === 'paid' ? 0 : (order.status === 'cancelled' ? 1 : order.status),
+        total: order.total_price,
+        createdAt: order.order_time
+      }));
+      
+      console.log('Converted orders:', convertedOrders);
+      dispatch({ type: 'SET_ORDERS', payload: convertedOrders });
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      dispatch({ type: 'SET_ORDERS', payload: [] });
     }
   };
 
@@ -507,6 +593,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadCategories,
     addOrder,
     updateOrderStatus,
+    loadOrders,
     setCurrentTable,
     login,
     logout,

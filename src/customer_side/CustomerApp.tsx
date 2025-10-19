@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { CustomerCartProvider } from './context/CustomerCartContext';
 import { useApp } from '../shared/context/AppContext';
 import CustomerHeader from './components/CustomerHeader';
 import CustomerMenuList from './components/CustomerMenuList';
@@ -56,10 +55,16 @@ const CustomerAppContent: React.FC = () => {
     useEffect(() => {
         console.log('Login state change:', { isLogin, showWelcomeModal, showMenu });
         
-        // If user logs out, always show welcome page
+        // Check if we have a token to determine if user was previously logged in
+        const hasToken = localStorage.getItem('jwt_token');
+        
         if (!isLogin) {
-            setShowWelcomeModal(true);
-            setShowMenu(false);
+            // Only show welcome modal if user was not previously logged in
+            // This prevents showing modal during initial app load when token exists
+            if (!hasToken) {
+                setShowWelcomeModal(true);
+                setShowMenu(false);
+            }
         } else {
             // User is logged in, decide display content based on hasSeenWelcome
             const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
@@ -137,11 +142,7 @@ const CustomerAppContent: React.FC = () => {
 };
 
 const CustomerApp: React.FC = () => {
-    return (
-        <CustomerCartProvider>
-            <CustomerAppContent />
-        </CustomerCartProvider>
-    );
+    return <CustomerAppContent />;
 };
 
 export default CustomerApp;

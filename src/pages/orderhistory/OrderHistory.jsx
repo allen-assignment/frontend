@@ -11,9 +11,11 @@ const OrderHistory = ({ userId, showHeader = false }) => {
     const [error, setError] = useState("");
 
     useEffect(() => {
-    
-        orderAPI.getUserOrders() // 
+        console.log('OrderHistory useEffect - loading order data from API');
+        // Get order data from API
+        orderAPI.getUserOrders()
             .then((res) => {
+                console.log('OrderHistory - order data loaded:', res.orders?.length || 0, 'orders');
                 setOrders(res.orders || []);
             })
             .catch(() => {

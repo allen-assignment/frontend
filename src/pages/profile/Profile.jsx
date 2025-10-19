@@ -6,32 +6,53 @@ import "./Profile.css";
 import PersonalInfo from "../userInfo/PersonalInfo";
 import EditField from "../../edit/EditField";
 import OrderHistory from "../orderhistory/OrderHistory";
-import { userAPI } from "../../services/api";
+import { useApp } from "../../shared/context/AppContext";
 
 const ProfileDashboard = ({ userId }) => {
     const navigate = useNavigate();
+    const { state, loadOrders } = useApp();
     const [userInfo, setUserInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     console.log('Profile rendered, userInfo:', userInfo);
 
-
     useEffect(() => {
-        console.log('Profile useEffect - loading user info from token');
-        // Get user info from token (no need to pass userId)
-        userAPI.getUserById()
-            .then((res) => {
-                console.log('Profile - user data loaded:', res);
-                setUserInfo(res);
-            })
-            .catch((error) => {
-                console.error('Profile - failed to load user info:', error);
-                setError("Failed to load user info.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    }, []);
+        console.log('Profile useEffect - using user info from AppContext');
+        
+        // AppContext already has the latest user data, just use it
+        if (state.currentUser && state.isLoggedIn) {
+            console.log('Profile - using user data from AppContext:', state.currentUser);
+            // Convert AppContext User format to Profile expected format
+            const profileUserInfo = {
+                user_id: state.currentUser.id,
+                username: state.currentUser.username,
+                email: state.currentUser.email,
+                birth_date: state.currentUser.birth_date,
+                merchant_id: state.currentUser.merchant_id,
+                merchant_name: state.currentUser.merchant_name,
+                user_type: state.currentUser.usertype,
+                taste_preferences: state.currentUser.taste_preferences
+            };
+            setUserInfo(profileUserInfo);
+            setLoading(false);
+        } else {
+            // If no user data in AppContext, show loading
+            console.log('Profile - waiting for AppContext to load user data...');
+            setLoading(true);
+            
+            // Add timeout to prevent infinite loading - logout if no data
+            const timeout = setTimeout(() => {
+                if (!state.currentUser) {
+                    console.error('Profile - timeout waiting for AppContext user data, logging out');
+                    // Clear token and redirect to login
+                    localStorage.removeItem('jwt_token');
+                    window.location.href = '/customer/login';
+                }
+            }, 5000); // 5 second timeout
+            
+            return () => clearTimeout(timeout);
+        }
+    }, [state.currentUser, state.isLoggedIn]);
 
     if (loading) return (
         <div className="min-h-screen bg-white">
