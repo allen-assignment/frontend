@@ -200,7 +200,7 @@ function Login({isLogin = true, onToggle = null}) {
             });
             const errMsg = err.response?.data?.error || err.message || 'Request failed';
             setError(errMsg);
-            alert('Login failed: ' + errMsg);  // Add alert to ensure user sees error
+            alert(errMsg);  // Add alert to ensure user sees error
         }
     };
 
