@@ -10,6 +10,7 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -18,6 +19,12 @@
 .env.test.local
 .env.production.local
 
+# documentation (keep local but don't commit)
+*.md
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+src/test/
+README.md
+/dist/

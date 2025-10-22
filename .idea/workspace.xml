@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="7209b36c-d5ab-4b02-99f4-7b9aaf8a1c7a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/shared/context/AppContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/shared/context/AppContext.tsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JavaScript File" />
+        <option value="JSX File" />
+        <option value="CSS File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2wLXpBTb4Cy3hwixAjoQtwzInyO" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Node.js.Login.jsx.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;payment&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/allen/Documents/front-end/dish-order-frontend&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.fileTypes&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/allen/Documents/front-end/dish-order-frontend/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9c94529fcfe0-JavaScript-WS-252.26199.162" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="7209b36c-d5ab-4b02-99f4-7b9aaf8a1c7a" name="Changes" comment="" />
+      <created>1745822008020</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1745822008020</updated>
+      <workItem from="1745822009501" duration="2637000" />
+      <workItem from="1746248359130" duration="1296000" />
+      <workItem from="1747136985346" duration="9334000" />
+      <workItem from="1747149166933" duration="813000" />
+      <workItem from="1747153307014" duration="1118000" />
+      <workItem from="1747199189415" duration="938000" />
+      <workItem from="1747617154059" duration="9079000" />
+      <workItem from="1747635663746" duration="18253000" />
+      <workItem from="1747804197157" duration="1842000" />
+      <workItem from="1748048987715" duration="5820000" />
+      <workItem from="1758353711407" duration="48000" />
+      <workItem from="1758353788790" duration="1320000" />
+      <workItem from="1758355112440" duration="4111000" />
+      <workItem from="1758520384382" duration="696000" />
+      <workItem from="1758551360409" duration="219000" />
+      <workItem from="1758551581639" duration="158000" />
+      <workItem from="1758552210783" duration="15589000" />
+      <workItem from="1758719880825" duration="6603000" />
+      <workItem from="1759805165069" duration="4829000" />
+      <workItem from="1760161507369" duration="2770000" />
+      <workItem from="1760336226533" duration="5849000" />
+      <workItem from="1760351313097" duration="1105000" />
+      <workItem from="1760354394229" duration="18422000" />
+      <workItem from="1760501091758" duration="25017000" />
+      <workItem from="1760753652910" duration="6851000" />
+      <workItem from="1760799750261" duration="1195000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

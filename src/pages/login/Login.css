@@ -1,44 +1,182 @@
-.auth-card {
-    width: 75vw;
-    max-height: 75vh;
-    max-width: 360px;
-    padding: 2rem;
-    background-color: rgba(255, 255, 255, 0.75) !important;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-radius: 8px;
+/* Login page container */
+.login-page-container {
+    min-height: calc(100vh - 64px); /* Subtract header height */
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    padding-top: 80px; /* Space for header */
 }
+
+/* Merchant login page container - no navigation bar */
+.login-page-container.no-header {
+    min-height: 100vh; /* Full screen height */
+    padding-top: 20px; /* Remove header space */
+}
+
+/* Login card styles */
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    min-height: 500px;
+    padding: 2.5rem;
+    background-color: #ffffff !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    position: relative;
+    margin: 0 auto;
+}
+
+/* Card body area */
 .auth-card .card-body {
     background-color: transparent !important;
+    padding: 0;
 }
+
+/* Form control styles */
 .auth-card .form-control {
     font-size: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    width: 100%;
+    margin-bottom: 1rem;
 }
 
+.auth-card .form-control:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+    background-color: #fff;
+    outline: none;
+}
+
+/* Button styles */
 .auth-card button {
     font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;
 }
 
+.auth-card .submit-btn {
+    background-color: #ef4444;
+    border: none;
+    color: white;
+}
+
+.auth-card .submit-btn:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Toggle text styles */
 .toggle-text {
     font-size: 0.9rem;
+    text-align: center;
+    margin-top: 1rem;
 }
 
 .toggle-text span {
-    color: #007bff;
+    color: #ef4444;
     cursor: pointer;
+    font-weight: 600;
+}
+
+.toggle-text span:hover {
+    color: #dc2626;
+}
+
+/* Taste preference selection styles */
+.preference-options {
+    margin-top: 1rem !important;
+    margin-bottom: 1.5rem !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+
+.preference-options .btn {
+    margin: 0 !important;
+    border-radius: 20px !important;
+    font-weight: 500 !important;
+    border: 1px solid #d1d5db !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    width: auto !important;
+    font-size: 13px !important;
+    padding: 0.15rem 0.4rem !important;
+    min-height: 32px !important;
+}
+
+.preference-options .btn-primary {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+.preference-options .btn-primary:hover {
+    background-color: #e5e7eb;
+    border-color: #6b7280;
+    color: #1f2937;
+}
+
+.preference-options .btn-outline-secondary {
+    color: #6b7280;
+    border-color: #d1d5db;
+    background-color: #ffffff;
+}
+
+.preference-options .btn-outline-secondary:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+.preference-options .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .login-page-container {
+        padding: 15px;
+        padding-top: 80px;
+        min-height: calc(100vh - 64px);
+    }
+    
+    .auth-card {
+        width: 100%;
+        max-width: 380px;
+        padding: 2rem;
+    }
 }
 
 @media (max-width: 480px) {
+    .login-page-container {
+        padding: 10px;
+        padding-top: 80px;
+        min-height: calc(100vh - 64px);
+    }
+    
     .auth-card {
         padding: 1.5rem;
+        min-height: 450px;
+        max-width: 100%;
     }
 
     .toggle-text {
         font-size: 0.85rem;
     }
 
-    .auth-card .form-control,
-    .auth-card button {
+    .auth-card .form-control {
         font-size: 0.95rem;
     }
 }

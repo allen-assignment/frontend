@@ -1,70 +1,150 @@
-# Getting Started with Create React App
+## 🚀 Quick Start
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
-## Available Scripts
+### Installation
 
-In the project directory, you can run:
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### `npm start`
+2. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-Runs the app in the development mode.\
+3. **Open in browser**
+   - Customer Interface: http://localhost:3000
+   - Merchant Interface: http://localhost:3000/merchant
+
+## 📜 Available Scripts
+
+### `npm run dev`
+Runs the app in development mode using Vite.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
 The page will reload when you make changes.\
 You may also see any lint errors in the console.
 
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
 ### `npm run build`
-
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `dist` folder.\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### `npm test`
+Launches the test runner using Vitest.\
+Runs tests in watch mode and provides interactive feedback.
 
-### `npm run eject`
+### `npm run test:ui`
+Launches the test runner with a web UI.\
+Provides a visual interface for running and debugging tests.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### `npm run test:run`
+Runs tests once and exits.\
+Useful for CI/CD pipelines.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🏗️ Project Structure
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+src/
+├── customer_side/          # Customer interface components
+│   ├── components/         # Customer-specific components
+│   ├── context/           # Customer context providers
+│   └── CustomerApp.tsx    # Main customer app
+├── merchant_side/         # Merchant interface components
+│   ├── components/        # Merchant-specific components
+│   └── MerchantApp.tsx    # Main merchant app
+├── shared/                # Shared components and utilities
+│   ├── components/        # Reusable components
+│   └── context/           # Global context providers
+├── pages/                 # Page components (login, profile, etc.)
+├── services/              # API services
+├── types/                 # TypeScript type definitions
+├── data/                  # Static data files
+├── edit/                  # Edit page components
+└── test/                  # Test setup files
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **State Management**: React Context API
+- **Testing**: Vitest + Testing Library
+- **Routing**: React Router v6
+- **HTTP Client**: Axios
+- **Icons**: Lucide React
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🔧 Configuration
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Vite Configuration
+The project uses Vite for fast development and building. Configuration is in `vite.config.ts`.
 
-### Code Splitting
+### TypeScript Configuration
+TypeScript configuration is in `tsconfig.json` with strict type checking enabled.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 🧪 Testing
 
-### Analyzing the Bundle Size
+### Running Tests
+```bash
+# Run tests in watch mode
+npm test
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+# Run tests with UI
+npm run test:ui
 
-### Making a Progressive Web App
+# Run tests once
+npm run test:run
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Test Structure
+- Tests are located in `__tests__` directories
+- Uses Vitest for fast test execution
+- Includes component testing with Testing Library
 
-### Advanced Configuration
+## 📱 Features
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Customer Features
+- Interactive menu browsing
+- Shopping cart management
+- Order tracking
+- User authentication
+- Order history
 
-### Deployment
+### Merchant Features
+- Menu management
+- Order processing
+- OCR menu recognition
+- Analytics dashboard
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🚀 Deployment
 
-### `npm run build` fails to minify
+### Build for Production
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The built files will be in the `dist` directory and can be deployed to any static hosting service.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `npm test`
+5. Build the project: `npm run build`
+6. Submit a pull request
+
+## 📚 Learn More
+
+- [React Documentation](https://reactjs.org/)
+- [Vite Documentation](https://vitejs.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/)
+- [Vitest Documentation](https://vitest.dev/)
